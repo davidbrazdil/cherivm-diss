@@ -16,10 +16,10 @@
 %% EDIT THE BELOW TO CUSTOMIZE
 %%
 
-\def\authorname{Sarah J.\ Jones\xspace}
-\def\authorcollege{Wolfson College\xspace}
-\def\authoremail{Sarah.Jones@cl.cam.ac.uk}
-\def\dissertationtitle{Type-Safety for Embedded Systems}
+\def\authorname{David Brazdil\xspace}
+\def\authorcollege{Trinity Hall\xspace}
+%\def\authoremail{Sarah.Jones@cl.cam.ac.uk}
+\def\dissertationtitle{Java Native Interface on CHERI}
 \def\wordcount{14,235}
 
 
@@ -53,35 +53,70 @@
 \pagenumbering{arabic} 
 \setcounter{page}{1} 
 
-This is the introduction where you should introduce your work.  In
-general the thing to aim for here is to describe a little bit of the
-context for your work --- why did you do it (motivation), what was the
-hoped-for outcome (aims) --- as well as trying to give a brief
-overview of what you actually did.
+% This is the introduction where you should introduce your work.  In
+% general the thing to aim for here is to describe a little bit of the
+% context for your work --- why did you do it (motivation), what was the
+% hoped-for outcome (aims) --- as well as trying to give a brief
+% overview of what you actually did.
+% 
+% It's often useful to bring forward some ``highlights'' into 
+% this chapter (e.g.\ some particularly compelling results, or 
+% a particularly interesting finding). 
+% 
+% It's also traditional to give an outline of the rest of the
+% document, although without care this can appear formulaic 
+% and tedious. Your call. 
 
-It's often useful to bring forward some ``highlights'' into 
-this chapter (e.g.\ some particularly compelling results, or 
-a particularly interesting finding). 
 
-It's also traditional to give an outline of the rest of the
-document, although without care this can appear formulaic 
-and tedious. Your call. 
 
+\begin{enumerate}
+	\item Java applications need 
+\end{enumerate}
 
 \chapter{Background} 
 
-A more extensive coverage of what's required to understand your 
-work. In general you should assume the reader has a good undergraduate 
-degree in computer science, but is not necessarily an expert in 
-the particular area you've been working on. Hence this chapter 
-may need to summarize some ``text book'' material. 
+% A more extensive coverage of what's required to understand your 
+% work. In general you should assume the reader has a good undergraduate 
+% degree in computer science, but is not necessarily an expert in 
+% the particular area you've been working on. Hence this chapter 
+% may need to summarize some ``text book'' material. 
+% 
+% This is not something you'd normally require in an academic paper, 
+% and it may not be appropriate for your particular circumstances. 
+% Indeed, in some cases it's possible to cover all of the ``background'' 
+% material either in the introduction or at appropriate places in 
+% the rest of the dissertation. 
 
-This is not something you'd normally require in an academic paper, 
-and it may not be appropriate for your particular circumstances. 
-Indeed, in some cases it's possible to cover all of the ``background'' 
-material either in the introduction or at appropriate places in 
-the rest of the dissertation. 
+\section{Java Security Architecture}
 
+Java was designed mainly as a universal platform for networked environments which necessarily made its security model one of the most important architectural features. On all its levels, Java addresses the common pitfalls of modern software engineering which can lead to introduction of security vulnerabilities, and thus guarantees a minimal level of application robustness and alleviates the process of implementing additional security measures.
+
+At the core of the platform lies the Java programming language, an easy-to-learn type-safe language with automatic memory management and built around the principles of object-oriented programming. These properties significantly reduce the likelihood of writing unsafe code and also encourage the principle of least privilege via separation of executable code and its state into smaller object-level protection domains.
+
+Java applications are expected to be distributed over public networks and therefore the platform has to account for composition of code with varying level of trust. Untrusted code can be executed inside a safe environment isolated from other code running inside the same virtual machine and be subject to a security policy which can limit its access to guarded resources.
+
+Additionally, the Java framework provides a large set of extensible security APIs with ready-to-use implementation of many cryptographic algorithms and standardized protocols for public key infrastructure, authorization and encrypted network communication. 
+
+\subsection{Memory Safety}
+
+range checks, garbage collection
+
+\subsection{Policy enforcement}
+
+\subsection{Java Native Interface}
+
+\begin{figure}
+	\includegraphics[width=\textwidth]{dia_jni_orig.pdf}
+	\caption{Schematic diagram of the core JVM components in terms of security.}
+\end{figure}
+
+\section{Capability Hardware Enhanced RISC Instructions (CHERI)}
+
+\section{Early capability systems}
+
+\subsection{Hybrid capability architecture}
+
+\subsection{Capability coprocessor}
 
 \chapter{Related Work} 
 
@@ -105,7 +140,19 @@ latter is that don't have to forward reference to your solution too
 much. The correct choice will depend on what you're writing up, and
 your own personal preference.
 
+\section{Joe-E}
 
+\section{Dalvik}
+
+sandbox by linux uid
+
+\section{SafeJNI}
+
+section{Robusta}
+
+doesn't support dynamic loading (and by design cannot)
+
+\section{Capsicum}
 
 \chapter{Design and Implementation} 
 
@@ -113,6 +160,23 @@ This chapter may be called something else\ldots but in general
 the idea is that you have one (or a few) ``meat'' chapters which
 describe the work you did in technical detail. 
 
+\section{Overview}
+
+\subsection{Toolchain}
+
+\section{Sandboxing}
+
+\subsection{Security domains}
+
+\section{Enforcing memory safety}
+
+\section{Applying security policy}
+
+all Java domains - language safety, security policies
+
+VM domain remains the only one that can do system calls => GNU Classpath now provides services around system calls but those must go through the trusted trampoline
+
+\section{Revoking access}
 
 \chapter{Evaluation} 
 
