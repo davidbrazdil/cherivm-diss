@@ -105,9 +105,22 @@ Java's type system is primarily dynamic, although most types are actually checke
 
 Memory safety in Java is strongly connected to the principles of OOP. Code does not have direct access to the heap but rather has to adhere to a model of a memory space structured into object instances and their internal fields protected by the reference monitor, accessed through opaque references and automatically managed by the garbage collector. Together with the type system and explicit range checks, Java prevents common bugs which can give the attacker access to an arbitrary part of the memory, such as buffer overflow or dangling pointers.
 
+\subsection{Object encapsulation}
+
+The guarantees described above are the cornerstone of the Java security as they allow for isolation of individual software modules by enabling them to encapsulate their state. 
+
+Individual object instances therefore become separate protection domains which only permit the modification of their inner state through a set of transactions exposed in their public interface. These methods become the only entry points into the respective protection domain and can be used by the object to control access to its state and to prevent operations which could leave the state inconsistent.
+
+Limiting the scope of the code which can access the state also makes it possible to argue about the high-level security properties of an object class. As the authors of Joe-E [REF] point out, however, Java still contains language features which can prevent such reasoning and suggest building a secure platform around its safe subset.
+
+\subsection{Java Sandbox}
+
+The design of the Java platform was deeply influenced by the web and the ability to dynamically load executable code from various, potentially untrusted sources into one instance of the Java virtual machine. The language safety properties do protect the integrity of the memory, but just by themselves cannot prevent the external code from abusing the system resources available to the VM or interacting with code from a different source. To this end, the platform provides a number of access control mechanisms which can execute different portions of the loaded code with different sets of permissions available to them.
+
+Java code is typically distributed in signed archives (JARs), allowing the VM to verify the origin of the code and select the desired security policy which will be later enforced upon it. If the origin is at least partially trusted, the archive is passed on to the bytecode verifier in order to determine whether the contained executable code complies with the required language safety properties.
 
 
-\subsection{Policy enforcement}
+
 reference monitor...
 
 \subsection{Java Native Interface}
