@@ -13,9 +13,9 @@ all: acs-dissertation.pdf
 #acs-dissertation.ps: acs-dissertation.dvi
 #	$(DVIPS) -Pdownload35 -ta4 acs-dissertation.dvi
 
-acs-dissertation.pdf: acs-dissertation.tex titlepage.tex declaration.tex abstract.tex
+acs-dissertation.pdf: acs-dissertation.tex acs-dissertation.bib titlepage.tex declaration.tex abstract.tex
 	$(LATEX) acs-dissertation
-#       $(BIBTEX) acs-dissertation
+	$(BIBTEX) acs-dissertation
 	$(LATEX) acs-dissertation
 	$(LATEX) acs-dissertation
 

@@ -23,7 +23,7 @@
 \def\wordcount{14,235}
 
 
-\usepackage{epsfig,graphicx,parskip,setspace,tabularx,xspace} 
+\usepackage{epsfig,graphicx,parskip,setspace,tabularx,xspace,url} 
 
 %% START OF DOCUMENT
 \begin{document}
@@ -93,17 +93,25 @@ Java was designed mainly as a universal platform for networked environments whic
 
 At the core of the platform lies the Java programming language, an easy-to-learn type-safe language with automatic memory management and built around the principles of object-oriented programming. These properties significantly reduce the likelihood of writing unsafe code and also encourage the principle of least privilege via separation of executable code and its state into smaller object-level protection domains.
 
-Java applications are expected to be distributed over public networks and therefore the platform has to account for composition of code with varying level of trust. Untrusted code can be executed inside a safe environment isolated from other code running inside the same virtual machine and be subject to a security policy which can limit its access to guarded resources.
+Java applications are expected to be distributed over public networks and therefore the platform has to account for composition of code with varying level of trust. Untrusted code can be executed inside a safe environment isolated from other code running inside the same virtual machine and be subject to a programmatically managed security policy which can limit its access to guarded resources.
 
 Additionally, the Java framework provides a large set of extensible security APIs with ready-to-use implementation of many cryptographic algorithms and standardized protocols for public key infrastructure, authorization and encrypted network communication. 
 
-\subsection{Memory Safety}
+\subsection{Code Safety}
+
+The security of the Java platform is deeply rooted in the type, memory and control flow safety properties of its executable code. The language and the instruction set were crafted in a way that program bugs are likely to be caught by the compiler and pre-execution bytecode verifier, and other will raise an exception at runtime. 
+
+Java's type system is primarily dynamic, although most types are actually checked statically for the sake of performance. Operations which are checked at runtime include array assignments, operations on generic classes and type casts. Unfortunately, the type inference algorithm has been shown to contain several vulnerabilities~\cite{Suenaga:2012:JavaVulnerability} which make way to type confusion attacks~\cite{Oh:2012:JavaExploitReport} and these can subsequently be exploited to bypasss the security of the entire platform~\cite{McGraw:1999:SJG:298616}.
+
+
 
 range checks, garbage collection
 
 \subsection{Policy enforcement}
 
 \subsection{Java Native Interface}
+
+allows for type confusion
 
 \begin{figure}
 	\includegraphics[width=\textwidth]{dia_jni_orig.pdf}
@@ -201,6 +209,6 @@ to potential future work.
 \singlespacing
 
 \bibliographystyle{unsrt} 
-%\bibliography{dissertation} 
+\bibliography{acs-dissertation} 
 
 \end{document}
