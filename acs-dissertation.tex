@@ -103,7 +103,9 @@ The security of the Java platform is deeply rooted in the type, memory and contr
 
 Java's type system is primarily dynamic, although most types are actually checked statically for the sake of performance. Operations which are checked at runtime include array assignments, operations on generic classes and type casts. Unfortunately, the type inference algorithm has been shown to contain vulnerabilities~\cite{Suenaga:2012:JavaVulnerability} which make way to type confusion attacks~\cite{Oh:2012:JavaExploitReport} and these can subsequently be exploited to bypasss the security of the entire platform~\cite{McGraw:1999:SJG:298616}.
 
-Memory safety in Java is strongly connected to the principles of OOP. Code does not have direct access to the heap but rather has to adhere to a model of a memory space structured into object instances and their internal fields protected by the reference monitor, accessed through opaque references and automatically managed by the garbage collector. Together with the type system and explicit range checks, Java prevents common bugs such as buffer overflow or dangling pointers which can give the attacker access to an arbitrary part of the memory.
+Memory safety in Java is strongly connected to the principles of OOP. Code does not have direct access to the heap but rather has to adhere to a model of a memory space structured into object instances and their internal fields protected by the reference monitor, accessed through opaque references and automatically managed by the garbage collector. Together with the type system and explicit range checks, Java prevents common bugs which can give the attacker access to an arbitrary part of the memory, such as buffer overflow or dangling pointers.
+
+
 
 \subsection{Policy enforcement}
 reference monitor...
