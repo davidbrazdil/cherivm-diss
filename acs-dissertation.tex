@@ -117,6 +117,12 @@ Limiting the scope of the code which can access the state also makes it possible
 
 The design of the Java platform was deeply influenced by the web and the ability to dynamically load executable code from various, potentially untrusted sources into one instance of the Java virtual machine. The language safety properties do protect the integrity of the memory, but just by themselves cannot prevent the external code from abusing the system resources available to the VM or interacting with code from a different source. To this end, the platform provides a number of access control mechanisms which can execute different portions of the loaded code with different sets of permissions available to them. These mechanisms are referred to as the Java Sandbox Model.
 
+\begin{figure}
+	\centering
+	\includegraphics[width=0.8\textwidth]{dia_java_classload.pdf}
+	\caption{Class loading in Java}
+\end{figure}
+
 Java code is loaded into the virtual machine by a special object which extends the \texttt{ClassLoader} class. The main task of a class loader is extracting bytecode from some external resource and passing it on to the bytecode verifier which determines whether it complies with the required language safety properties. Typically it also selects the desired security policy which will be later enforced upon it, and it is the class loader's task to make sure that the newly loaded code will not replace any existing classes (including itself and other security-critical classes) unless this is explicitly allowed. 
 
 Every Java VM provides a simple "primordial" class loader implemented in native code which bootstraps the framework and immediately hands the process over to its loader. Code with sufficient permissions can then define new, potentially simultaneosly active class loaders and arrange them into hierarchies. Since class loaders are also responsible for resolving classes and methods for the code loaded by them, they can be used to create local namespaces, effectively isolating codebases which should not be allowed to interact.
