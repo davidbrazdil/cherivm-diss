@@ -15,7 +15,7 @@ all: acs-dissertation.pdf
 
 acs-dissertation.pdf: acs-dissertation.tex acs-dissertation.bib titlepage.tex declaration.tex abstract.tex
 	$(LATEX) acs-dissertation
-	$(BIBTEX) acs-dissertation
+#	$(BIBTEX) acs-dissertation
 	$(LATEX) acs-dissertation
 	$(LATEX) acs-dissertation
 
