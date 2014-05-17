@@ -93,7 +93,7 @@ Java was designed mainly as a universal platform for networked environments whic
 
 At the core of the platform lies the Java programming language, an easy-to-learn type-safe language with automatic memory management and built around the principles of object-oriented programming. These properties significantly reduce the likelihood of writing unsafe code and also encourage the principle of least privilege via separation of executable code and its state into smaller object-level protection domains.
 
-Java applications are expected to be distributed over public networks and therefore the platform has to account for composition of code with varying level of trust. Untrusted code can be executed inside a safe environment isolated from other code running inside the same virtual machine and be subject to a programmatically managed security policy which can limit its access to guarded resources.
+Java applications are expected to be distributed over public networks and therefore the platform has to account for composition of code with varying level of trust. Untrusted code can be executed inside a safe environment isolated from other code running inside the same virtual machine and be subject to a programmatically managed security policy which can limit its access to guarded resources. This is called the \emph{Java Sandbox Model}.
 
 Additionally, the Java framework provides a large set of extensible security APIs with ready-to-use implementation of many cryptographic algorithms and standardized protocols for public key infrastructure, authorization and encrypted network communication. 
 
@@ -101,21 +101,21 @@ Additionally, the Java framework provides a large set of extensible security API
 
 The security of the Java platform is deeply rooted in the type, memory and control flow safety properties of its executable code. The language and the instruction set were crafted in a way that program bugs are likely to be caught by the compiler and pre-execution bytecode verifier, and other will raise an exception at runtime. 
 
-Java's type system is primarily dynamic, although most types are actually checked statically for the sake of performance. Operations which are checked at runtime include array assignments, operations on generic classes and type casts. Unfortunately, the type inference algorithm has been shown to contain vulnerabilities~\cite{Suenaga:2012:JavaVulnerability} which make way to type confusion attacks~\cite{Oh:2012:JavaExploitReport} and these can subsequently be exploited to bypasss the security of the entire platform~\cite{McGraw:1999:SJG:298616}.
+% Java's type system is dynamic, although most types are actually checked statically for the sake of performance. Operations which are checked at runtime include array assignments, operations on generic classes and type casts. Unfortunately, the type inference algorithm has been shown to contain vulnerabilities~\cite{Suenaga:2012:JavaVulnerability} which make way to type confusion attacks~\cite{Oh:2012:JavaExploitReport} and these can subsequently be exploited to bypasss the security of the entire platform~\cite{McGraw:1999:SJG:298616}.
 
 Memory safety in Java is strongly connected to the principles of OOP. Code does not have direct access to the heap but rather has to adhere to a model of a memory space structured into object instances and their internal fields protected by the reference monitor, accessed through opaque references and automatically managed by the garbage collector. Together with the type system and explicit range checks, Java prevents common bugs which can give the attacker access to an arbitrary part of the memory, such as buffer overflow or dangling pointers.
 
-\subsection{Object encapsulation}
+\subsection{Object Encapsulation}
 
 The guarantees described above are the cornerstone of the Java security as they allow for isolation of individual software modules by enabling them to encapsulate their state. 
 
-Individual object instances therefore become separate protection domains which only permit the modification of their inner state through a set of transactions exposed in their public interface. These methods become the only entry points into the respective protection domain and can be used by the object to control access to its state and to prevent operations which could leave the state inconsistent.
+Individual classes therefore become separate protection domains which only permit the modification of their inner state through a set of transactions exposed in their public interface. These methods become the only entry points into the respective protection domain and can be used by the object to control access to its state and to prevent operations which could leave the state inconsistent.
 
-Limiting the scope of the code which can access the state also makes it possible to argue about the high-level security properties of an object class. As the authors of Joe-E [REF] point out, however, Java still contains language features which can prevent such reasoning and suggest building a secure platform around its safe subset.
+Limiting the scope of the code which can access the state also makes it possible to argue about the high-level security properties of an object class. As the authors of Joe-E [REF] point out, however, Java still contains language features which can prevent such reasoning and suggest building a more secure platform around its safe subset.
 
-\subsection{Java Sandbox}
+\subsection{Java Sandbox Model}
 
-The design of the Java platform was deeply influenced by the web and the ability to dynamically load executable code from various, potentially untrusted sources into one instance of the Java virtual machine. The language safety properties do protect the integrity of the memory, but just by themselves cannot prevent the external code from abusing the system resources available to the VM or interacting with code from a different source. To this end, the platform provides a number of access control mechanisms which can execute different portions of the loaded code with different sets of permissions available to them. These mechanisms are referred to as the Java Sandbox Model.
+The design of the Java platform was deeply influenced by the web and the ability to dynamically load executable code from various, potentially untrusted sources into one instance of the Java virtual machine a priority. The language safety properties do protect the integrity of the memory, but just by themselves cannot prevent the external code from abusing the system resources available to the VM or interacting with code from a different source. To this end, the platform provides a number of access control mechanisms which make it poosible to execute different portions of the loaded code with different sets of permissions available to them. 
 
 \begin{figure}
 	\centering
@@ -123,20 +123,36 @@ The design of the Java platform was deeply influenced by the web and the ability
 	\caption{Class loading in Java}
 \end{figure}
 
-Java code is loaded into the virtual machine by a special object which extends the \texttt{ClassLoader} class. The main task of a class loader is extracting bytecode from some external resource and passing it on to the bytecode verifier which determines whether it complies with the required language safety properties. Typically it also selects the desired security policy which will be later enforced upon it, and it is the class loader's task to make sure that the newly loaded code will not replace any existing classes (including itself and other security-critical classes) unless this is explicitly allowed. 
+Java code is loaded into the virtual machine by a special object which extends the \texttt{ClassLoader} class. The main task of a class loader is extracting bytecode from some external source and passing it on to the bytecode verifier which determines whether it complies with the required language safety properties. Typically it also selects the desired security policy which will be later enforced upon it, and it is the class loader's task to make sure that the newly loaded code will not replace any existing classes (including itself and other security-critical classes) unless this is explicitly allowed. 
 
 Every Java VM provides a simple "primordial" class loader implemented in native code which bootstraps the framework and immediately hands the process over to its loader. Code with sufficient permissions can then define new, potentially simultaneosly active class loaders and arrange them into hierarchies. Since class loaders are also responsible for resolving classes and methods for the code loaded by them, they can be used to create local namespaces, effectively isolating codebases which should not be allowed to interact.
 
-The last component of the Java sandbox is a reference monitor, called the Security Manager. Before untrusted code is called, the parent can set a thread-local reference to a \texttt{SecurityManager} object which implements the security policy that is to be enforced upon it. Should the untrusted code attempt to access system or VM resources during its execution, it must do so through the framework API and these methods always consult the active Security Manager whether access should be granted.
+The last component of the Java sandbox is a reference monitor, called the Security Manager. Before untrusted code is called, the parent can set a thread-local reference to a \texttt{SecurityManager} object which implements the security policy that is to be enforced upon it. Should the untrusted code attempt to access system or VM resources during its execution, it must do so through the framework API and these methods always consult the active Security Manager before access is granted.
 
-\subsection{Native Code}
+\subsection{Java Native Interface}
 
-allows for type confusion
+Just like bytecode, shared libraries are loaded by a class loader and reside in its namespace. The method resolver then uses a naming convention defined in the JNI specification to bind a class method which is marked \texttt{native} with a corresponding function in the native library.
+
+Developers are provided with a C/C++ header which contains the definitions of types compatible with the primitive types used in Java, the \texttt{jobject} type to represent object references (typically pointers to the object heap) and the \texttt{JNIEnv} data structure containing functions that provide an API for interfacing with the VM, such as reading/assigning values of object fields, creating new objects, or invoking other methods in the Java environment. A pointer to an instance of \texttt{JNIEnv} is passed to the function together with the actual parameters of the corresponding method call.
+
+However, the Java platform does not provide any means of containing native code. Because it resides in the same memory space as the VM, it does have unlimited access to the object heap and can both read and modify any object on it. Similarly, native code can perform system calls without the knowledge of the security monitor and thus completely bypass all of the security measures of the Java sandbox.
+
+What follows from this is that only applications which are written in pure Java can be sandboxed because any native code attached to the virtual machine can circumvent all of the security mechanisms it provides. Hence loading native libraries is one of the permissions which can and must be taken away from all sandboxed code.
+
+\subsection{Trust and Native Code}
+
+Previous sections have explained the role of the three pillars of Java security: language safety, secure class loading and a reference monitor. To understand how native code fits into this picture, it is essential to understand the relationship between these three components and the assumptions they make.
+
+The Java VM consists mainly of: bytecode interpreter (or a compiler into native code), a minimal class manager with a bytecode verifier, memory management code and a small set of low-level classes implemented in native code which faciliate communication between the VM and the managed code, e.g. to provide reflection. The entire VM codebase must be fully trusted and guarantee that only safe code will ever be executed.
+
+The Java framework, on the other hand, is mostly written in Java with a relatively small number of native methods which give managed code access to system calls and only these therefore need to be trusted to not violate language safety. The framework includes classes which abstract over the system resources, provides its own class loader, which selects the appropriate security policy and passes bytecode over to the VM's verifier and loader, and a default implementation of the security manager. All of these Java classes, as well as the native code, are trusted to not compromise the class hierarchy and to always enforce the active security policy.
 
 \begin{figure}
 	\includegraphics[width=\textwidth]{dia_jni_orig.pdf}
 	\caption{Schematic diagram of the core JVM components in terms of security.}
 \end{figure}
+
+
 
 \section{Capability Hardware Enhanced RISC Instructions (CHERI)}
 
