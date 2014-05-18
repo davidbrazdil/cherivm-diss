@@ -23,11 +23,29 @@
 \def\wordcount{14,235}
 
 
-\usepackage{epsfig,graphicx,parskip,setspace,tabularx,xspace,url} 
+\usepackage{epsfig,graphicx,parskip,setspace,tabularx,xspace,url,listings,color} 
 
 %% START OF DOCUMENT
 \begin{document}
 
+\lstset{
+	basicstyle=\tt\footnotesize,	% the size of the fonts that are used for the code
+	numbers=left,			% where to put the line-numbers
+	numberstyle=\footnotesize,	% the size of the fonts that are used for the line-numbers
+	stepnumber=1,			% the step between two line-numbers. If it is 1 each line will be numbered
+	numbersep=5pt,			% how far the line-numbers are from the code
+	backgroundcolor=\color{white},	% choose the background color. You must add \usepackage{color}
+	showspaces=false,		% show spaces adding particular underscores
+	showstringspaces=false,		% underline spaces within strings
+	showtabs=false,			% show tabs within strings adding particular underscores
+	frame=leftline,			% adds a frame around the code
+	tabsize=2,			% sets default tabsize to 2 spaces
+	captionpos=b,			% sets the caption-position to bottom
+	breaklines=true,		% sets automatic line breaking
+	breakatwhitespace=false,	% sets if automatic breaks should only happen at whitespace
+	escapeinside={\%*}{*)},		% if you want to add a comment within your code
+	captionpos=t,			% title position
+}
 
 %% FRONTMATTER (TITLE PAGE, DECLARATION, ABSTRACT, ETC) 
 \pagestyle{empty}
@@ -115,7 +133,7 @@ Limiting the scope of the code which can access the state also makes it possible
 
 \subsection{Java Sandbox Model}
 
-The design of the Java platform was deeply influenced by the web and the ability to dynamically load executable code from various, potentially untrusted sources into one instance of the Java virtual machine a priority. The language safety properties do protect the integrity of the memory, but just by themselves cannot prevent the external code from abusing the system resources available to the VM or interacting with code from a different source. To this end, the platform provides a number of access control mechanisms which make it poosible to execute different portions of the loaded code with different sets of permissions available to them. 
+The design of the Java platform was deeply influenced by the web and the ability to dynamically load executable code from various, potentially untrusted sources into one instance of the Java virtual machine a priority. The language safety properties do protect the integrity of the memory, but just by themselves cannot prevent the external code from abusing the system resources available to the VM or interacting with code from a different source. To this end, the platform provides a number of access control mechanisms which make it poosible to execute differents portions of the loaded code with different sets of permissions available to them. 
 
 \begin{figure}
 	\centering
@@ -133,7 +151,14 @@ The last component of the Java sandbox is a reference monitor, called the Securi
 
 Just like bytecode, shared libraries are loaded by a class loader and reside in its namespace. The method resolver then uses a naming convention defined in the JNI specification to bind a class method which is marked \texttt{native} with a corresponding function in the native library.
 
-Developers are provided with a C/C++ header which contains the definitions of types compatible with the primitive types used in Java, the \texttt{jobject} type to represent object references (typically pointers to the object heap) and the \texttt{JNIEnv} data structure containing functions that provide an API for interfacing with the VM, such as reading/assigning values of object fields, creating new objects, or invoking other methods in the Java environment. A pointer to an instance of \texttt{JNIEnv} is passed to the function together with the actual parameters of the corresponding method call.
+\begin{figure}
+	\lstinputlisting[language=Java,title=HelloJNI.java]{example/HelloJNI.java}
+	\lstinputlisting[language=C,title=HelloJNI.c]{example/HelloJNI.c}
+	\caption{Example of a method implemented with JNI. \texttt{getMessage} calls \texttt{NewStringUTF} which instantiates a new \texttt{String} object and returns its reference to the caller.}
+	\label{listing:HelloJNI}
+\end{figure}
+
+Developers are provided with a C/C++ header which contains the definitions of types compatible with the primitive types used in Java, the \texttt{jobject} type to represent object references (typically pointers to the object heap) and the \texttt{JNIEnv} data structure containing functions that provide an API for interfacing with the VM, such as reading/assigning values of object fields, creating new objects, or invoking other methods in the Java environment. A pointer to an instance of \texttt{JNIEnv} is passed to the function together with the actual parameters of the corresponding method call. Figure~\ref{listing:HelloJNI} shows a simple Java class with a \texttt{native} method and its implementation in C.
 
 However, the Java platform does not provide any means of containing native code. Because it resides in the same memory space as the VM, it does have unlimited access to the object heap and can both read and modify any object on it. Similarly, native code can perform system calls without the knowledge of the security monitor and thus completely bypass all of the security measures of the Java sandbox.
 
