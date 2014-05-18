@@ -178,9 +178,13 @@ The Java VM consists mainly of: bytecode interpreter (or a compiler into native 
 
 The Java framework, on the other hand, is mostly written in Java with a relatively small number of native methods which give managed code access to system calls and only these therefore need to be trusted to not violate language safety. The framework includes classes which abstract over the system resources, provides its own class loader, which selects the appropriate security policy and passes bytecode over to the VM's verifier and loader, and a default implementation of the security manager. All of these Java classes, as well as the native code, are trusted to not compromise the class hierarchy and to always enforce the active security policy.
 
-\section{}
+\section{Security with Capabilities}
 
+Memory protection and decomposition of software into isolated components are highly desired security properties but contemporary computer systems do not provide the means of achieving them. Most commonly, operating systems provide controlled process isolation with virtual addressing and inter-process communication. This approach, however, suffers from poor scalability due to a high performance penalty imposed by the translation look-aside buffer as the number of protection domains and the domain switches between them increases. [better explain - why is it important here?] [REF] 
 
+Conversly, capabilities have proven to be a security primitive which allows for fine-grained memory protection and low-overhead software compartmentalization within a single address space. This makes them an ideal tool for applying the principle of least privilege on a very small scale, i.e. running each software component with only the access rights it needs, and that in turn mitigates the consequences of vulnerabilities which inevitably appear in the code.
+
+\subsection{CHERI}
 
 Capability Hardware Enhanced RISC Instructions (CHERI)
 
