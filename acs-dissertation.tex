@@ -157,7 +157,7 @@ Just like bytecode, shared libraries are loaded by a class loader and reside in 
 	\label{fig:OverviewJNI}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[t]
 	\lstinputlisting[language=Java,title=HelloJNI.java]{example/HelloJNI.java}
 	\lstinputlisting[language=C,title=HelloJNI.c]{example/HelloJNI.c}
 	\caption{Example of a method implemented with JNI. \texttt{getMessage} calls \texttt{NewStringUTF} which instantiates a new \texttt{String} object and returns its reference to the caller.}
