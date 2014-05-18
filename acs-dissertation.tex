@@ -160,9 +160,9 @@ Just like bytecode, shared libraries are loaded by a class loader and reside in 
 
 Developers are provided with a C/C++ header which contains the definitions of types compatible with the primitive types used in Java, the \texttt{jobject} type to represent object references (typically pointers to the object heap) and the \texttt{JNIEnv} data structure containing functions that provide an API for interfacing with the VM, such as reading/assigning values of object fields, creating new objects, or invoking other methods in the Java environment. A pointer to an instance of \texttt{JNIEnv} is passed to the function together with the actual parameters of the corresponding method call. Figure~\ref{listing:HelloJNI} shows a simple Java class with a \texttt{native} method and its implementation in C.
 
-However, the Java platform does not provide any means of containing native code. Because it resides in the same memory space as the VM, it does have unlimited access to the object heap and can both read and modify any object on it. Similarly, native code can perform system calls without the knowledge of the security monitor and thus completely bypass all of the security measures of the Java sandbox.
+However, the Java platform does not provide any means of containing native code. Because it resides in the same memory space as the VM, it does have unlimited access to the object heap and can both read and modify any object data on it. Similarly, native code can perform system calls without the knowledge of the security monitor.
 
-What follows from this is that only applications which are written in pure Java can be sandboxed because any native code attached to the virtual machine can circumvent all of the security mechanisms it provides. Hence loading native libraries is one of the permissions which can and must be taken away from all sandboxed code.
+What follows from this is that only applications which are written in pure Java can be sandboxed as any native code attached to the virtual machine can circumvent all of the security mechanisms it provides. Hence giving a piece of code the permission to load native libraries is equivalent to giving it all the permissions, including unlimited access to the state of the virtual machine, and this permission must therefore be taken away from all sandboxed code.
 
 \subsection{Trust and Native Code}
 
