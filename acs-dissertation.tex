@@ -152,17 +152,23 @@ The last component of the Java sandbox is a reference monitor, called the Securi
 Just like bytecode, shared libraries are loaded by a class loader and reside in its namespace. The method resolver then uses a naming convention defined in the JNI specification to bind a class method which is marked \texttt{native} with a corresponding function in the native library.
 
 \begin{figure}
+	\includegraphics[width=\textwidth]{dia_jni_orig.pdf}
+	\caption{Schematic diagram of the core JVM security components and with respect to native code. Solid lines represent data flow paths, dashed lines show control flow.}
+	\label{fig:OverviewJNI}
+\end{figure}
+
+\begin{figure}
 	\lstinputlisting[language=Java,title=HelloJNI.java]{example/HelloJNI.java}
 	\lstinputlisting[language=C,title=HelloJNI.c]{example/HelloJNI.c}
 	\caption{Example of a method implemented with JNI. \texttt{getMessage} calls \texttt{NewStringUTF} which instantiates a new \texttt{String} object and returns its reference to the caller.}
 	\label{listing:HelloJNI}
 \end{figure}
 
-Developers are provided with a C/C++ header which contains the definitions of types compatible with the primitive types used in Java, the \texttt{jobject} type to represent object references (typically pointers to the object heap) and the \texttt{JNIEnv} data structure containing functions that provide an API for interfacing with the VM, such as reading/assigning values of object fields, creating new objects, or invoking other methods in the Java environment. A pointer to an instance of \texttt{JNIEnv} is passed to the function together with the actual parameters of the corresponding method call. Figure~\ref{listing:HelloJNI} shows a simple Java class with a \texttt{native} method and its implementation in C.
+Developers are provided with a C/C++ header which contains the definitions of types compatible with the primitive types used in Java, the \texttt{jobject} type to represent object references (typically pointers to the object heap) and the \texttt{JNIEnv} data structure containing functions that provide an API for interfacing with the VM, such as reading/assigning values of object fields, creating new objects, or invoking other methods in the Java environment. A pointer to an instance of \texttt{JNIEnv} is passed to the function together with the actual parameters of the corresponding method call. Figure~\ref{fig:OverviewJNI} gives a simplified overview of the architecture, and Figure~\ref{listing:HelloJNI} shows an example of a simple Java class with a \texttt{native} method implemented in C.
 
-However, the Java platform does not provide any means of containing native code. Because it resides in the same memory space as the VM, it does have unlimited access to the object heap and can both read and modify any object data on it. Similarly, native code can perform system calls without the knowledge of the security monitor.
+However, the Java platform does not provide any means of containing native code. Because it resides in the same memory space as the VM, it does have unlimited access to the object heap and can both read and modify any object data on it, including the class loaders and other security-critical classes. Similarly, native code can perform system calls without the knowledge of the security monitor or even modify the state of the virtual machine.
 
-What follows from this is that only applications which are written in pure Java can be sandboxed as any native code attached to the virtual machine can circumvent all of the security mechanisms it provides. Hence giving a piece of code the permission to load native libraries is equivalent to giving it all the permissions, including unlimited access to the state of the virtual machine, and this permission must therefore be taken away from all sandboxed code.
+What follows from this is that only applications which are written in pure Java can be sandboxed as any native code attached to the virtual machine can circumvent all of the security mechanisms it provides. Hence giving a piece of code the permission to load native libraries is equivalent to giving it all the other Java permissions as well as unlimited access to the state of the VM. This permission must therefore be taken away from all sandboxed code.
 
 \subsection{Trust and Native Code}
 
@@ -171,11 +177,6 @@ Previous sections have explained the role of the three pillars of Java security:
 The Java VM consists mainly of: bytecode interpreter (or a compiler into native code), a minimal class manager with a bytecode verifier, memory management code and a small set of low-level classes implemented in native code which faciliate communication between the VM and the managed code, e.g. to provide reflection. The entire VM codebase must be fully trusted and guarantee that only safe code will ever be executed.
 
 The Java framework, on the other hand, is mostly written in Java with a relatively small number of native methods which give managed code access to system calls and only these therefore need to be trusted to not violate language safety. The framework includes classes which abstract over the system resources, provides its own class loader, which selects the appropriate security policy and passes bytecode over to the VM's verifier and loader, and a default implementation of the security manager. All of these Java classes, as well as the native code, are trusted to not compromise the class hierarchy and to always enforce the active security policy.
-
-\begin{figure}
-	\includegraphics[width=\textwidth]{dia_jni_orig.pdf}
-	\caption{Schematic diagram of the core JVM components in terms of security.}
-\end{figure}
 
 
 
