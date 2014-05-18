@@ -182,11 +182,11 @@ The Java framework, on the other hand, is mostly written in Java with a relative
 
 Memory protection and decomposition of software into isolated components are highly desired security properties but contemporary computer systems do not provide the means of achieving them. Most commonly, operating systems provide controlled process isolation with virtual addressing and inter-process communication. This approach, however, suffers from poor scalability due to a high performance penalty imposed by the translation look-aside buffer as the number of protection domains and the domain switches between them increases. [better explain - why is it important here?] [REF] 
 
-Conversly, capabilities have proven to be a security primitive which allows for fine-grained memory protection and low-overhead software compartmentalization within a single address space. This makes them an ideal tool for applying the principle of least privilege on a very small scale, i.e. running each software component with only the access rights it needs, and that in turn mitigates the consequences of vulnerabilities which inevitably appear in the code.
+Conversly, capabilities have proven to be a security primitive which allows for fine-grained memory protection and low-overhead software compartmentalization within a single address space. This makes them an ideal tool for applying the principle of least privilege on a very small scale, i.e. running each software component with only the access rights it needs, and that in turn mitigates the consequences of security vulnerabilities which inevitably appear in the code. 
 
 \subsection{CHERI}
 
-Capability Hardware Enhanced RISC Instructions (CHERI)
+Capability Hardware Enhanced RISC Instructions (CHERI) is an extension of the comodity 64-bit MIPS Instruction Set Architecture (ISA), developed at University of Cambridge Computer Laboratory, which adds capabilities as a new security primitive that can be utilized by the operating system and other software running on top of it. The result is a hybrid capability architecture which is backwards-compatible with the traditional form of process isolation with virtual address spaces, but simultaneously enables capability-aware software to employ additional security measures within the address space assigned to it.
 
 \subsection{Technical Details}
 
