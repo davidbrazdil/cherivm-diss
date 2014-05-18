@@ -168,7 +168,7 @@ Developers are provided with a C/C++ header which contains the definitions of ty
 
 However, the Java platform does not provide any means of containing native code. Because it resides in the same virtual address space as the VM, it does have unlimited access to the object heap and can both read and modify any object data on it, including the class loaders and other security-critical classes. Similarly, native code can perform system calls without the knowledge of the security monitor or even modify the state of the virtual machine.
 
-What follows from this is that only applications which are written in pure Java can be sandboxed as any native code attached to the virtual machine can circumvent all of the security mechanisms it provides. Hence giving a piece of code the permission to load native libraries is equivalent to giving it all the other Java permissions as well as unlimited access to the state of the VM. This permission must therefore be taken away from all sandboxed code.
+What follows from this is that only applications which are written in pure Java can be sandboxed as any native code attached to the virtual machine can circumvent all of the security mechanisms it provides. Hence giving a piece of code the permission to load native libraries is equivalent to giving it all the other permissions as well as unlimited access to the state of the VM. This permission must therefore be taken away from all sandboxed code.
 
 \subsection{Trust and Native Code}
 
@@ -178,9 +178,9 @@ The Java VM consists mainly of: bytecode interpreter (or a compiler into native 
 
 The Java framework, on the other hand, is mostly written in Java with a relatively small number of native methods which give managed code access to system calls and only these therefore need to be trusted to not violate language safety. The framework includes classes which abstract over the system resources, provides its own class loader, which selects the appropriate security policy and passes bytecode over to the VM's verifier and loader, and a default implementation of the security manager. All of these Java classes, as well as the native code, are trusted to not compromise the class hierarchy and to always enforce the active security policy.
 
-\section{Capability-enhanced Hardware}
+\section{}
 
-\subsection{Hybrid Capability Architecture}
+
 
 Capability Hardware Enhanced RISC Instructions (CHERI)
 
