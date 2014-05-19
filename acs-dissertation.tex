@@ -184,7 +184,7 @@ Memory protection and decomposition of software into isolated components are hig
 
 Conversly, capabilities have proven to be a security primitive which allows for fine-grained memory protection and low-overhead software compartmentalization within a single address space. This makes them an ideal tool for applying the principle of least privilege on a very small scale, i.e. running each software component with only the access rights it needs, and that in turn mitigates the consequences of security vulnerabilities which inevitably appear in the code. 
 
-\subsection{CHERI}
+\subsection{Overview of CHERI}
 
 Capability Hardware Enhanced RISC Instructions (CHERI) is an extension of the comodity 64-bit MIPS Instruction Set Architecture (ISA), developed at University of Cambridge Computer Laboratory, which adds capabilities as a new security primitive that can be utilized by the operating system and other software running on top of it. The result is a hybrid capability architecture which is backwards-compatible with the traditional form of process isolation with virtual address spaces, but simultaneously enables capability-aware software to employ additional security measures within the address space assigned to the running process.
 
@@ -200,6 +200,17 @@ Each such pair of compatible capabilities can be used by the holder to perform a
 One of the weaknesses typically associated with capabilities is the difficulty of access rights' revocation, e.g.\ after an object is destroyed and its memory region allocated to another. CHERI does not solve this problem entirely and still relies on the software stack to either guarantee virtual space non-reuse or to provide a form of capability garbage collection. It does, however, alleviate the process by enabling capabilities to be marked \emph{ephemeral} and the right to store ephemeral capabilities to be removed from a majority of an object's memory space, hence bounding their potential spread.
 
 \subsection{Programming with CHERI}
+
+CHERI implements capabilities as 4-word (256-bit) data structures with the following fields:
+\begin{description}
+	\item[Base \& length] A pointer to the base of the memory region and its length; both 64-bit values.
+	\item[Permissions] 31-bit mask which describes the operations that may be performed with the capability.
+	\item[Unsealed bit] If this flag is set, the capability can be used in general-purpose capability operations.
+	\item[Object type] A 64-bit identificator to ensure that only corresponding data and code capabilities are used together.
+\end{description}
+Because these are too big to fit into standard registers, CHERI extends the register file with 28 general-purpose and four specialized capability registers, and defines their function in a new ABI convention. Nevertheless, extra caution is required when calling less trusted code because it may not conform to the convention. Specifically, the caller must explicitly clear all unused registers to avoid leaking rights and private data to the callee.
+
+Capabilities must be protected by the hardware in order to guarantee their integrity and unforgeability, yet at the same time it is highly desirable to allow capabilities to be stored together with normal data. To this end, each capability register has a tag which indicates whether it is holding a valid capability or not, and correspondingly the physical memory is required to associate a tag with every fourth word (capabilities in memory must be aligned accordingly). Only the safe instructions defined in the extended ISA can set or preserve this tag and will trap if they are invoked with invalid capabilities. Storing into memory with original MIPS instructions always clears the tag of the corresponding capability block.
 
 \chapter{Related Work} 
 
