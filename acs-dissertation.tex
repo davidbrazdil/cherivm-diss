@@ -195,7 +195,7 @@ CHERI capabilities can also be sealed, in which case they cannot be used in load
 \item a memory region designated to the object (\emph{data capability}), and
 \item a pointer to an entry function (\emph{code capability}).
 \end{inparaenum}
-Each such pair of compatible capabilities can be used by the holder to perform a domain transition with the \emph{call} instruction which unseals the two capabilities and jumps to the given function. Object capabilities can therefore be safely passed to untrusted code as they only allow access to the internal state of the object via controlled access points. It is easy to see that a similar principle lies at the heart of the object paradigm in Java and other object-oriented languages.
+Each such pair of compatible capabilities can be used by the holder to perform a domain transition with the \emph{call} instruction which unseals the two capabilities, sets the limits of accessible memory to the region defined by the data capability and jumps to the given function. Object capabilities can therefore be safely passed to an untrusted component confined to a non-overlapping memory region as they only allow access to the internal state of the object via controlled access points. It is easy to see that a similar principle lies at the heart of the object paradigm implemented by Java and other object-oriented languages.
 
 % Revocation, ephemeral spread
 
