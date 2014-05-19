@@ -25,6 +25,9 @@
 
 \usepackage{epsfig,graphicx,parskip,setspace,tabularx,xspace,url,listings,color,paralist}
 
+\newcommand{\reg}[1]{\texttt{\$#1}}
+\newcommand{\insn}[1]{\texttt{#1}}
+
 %% START OF DOCUMENT
 \begin{document}
 
@@ -199,7 +202,7 @@ Each such pair of compatible capabilities can be used by the holder to perform a
 
 One of the weaknesses typically associated with capabilities is the difficulty of access rights' revocation, e.g.\ after an object is destroyed and its memory region allocated to another. CHERI does not solve this problem entirely and still relies on the software stack to either guarantee virtual space non-reuse or to provide a form of capability garbage collection. It does, however, alleviate the process by enabling capabilities to be marked \emph{ephemeral} and the right to store ephemeral capabilities to be removed from a majority of an object's memory space, hence bounding their potential spread.
 
-\subsection{Programming with CHERI}
+\subsection{Protecting Capabilities}
 
 CHERI implements capabilities as 4-word (256-bit) data structures with the following fields:
 \begin{description}
@@ -208,9 +211,30 @@ CHERI implements capabilities as 4-word (256-bit) data structures with the follo
 	\item[Unsealed bit] If this flag is set, the capability can be used in general-purpose capability operations.
 	\item[Object type] A 64-bit identificator to ensure that only corresponding data and code capabilities are used together.
 \end{description}
-Because these are too big to fit into standard registers, CHERI extends the register file with 28 general-purpose and four specialized capability registers, and defines their function in a new ABI convention. Nevertheless, extra caution is required when calling less trusted code because it may not conform to the convention. Specifically, the caller must explicitly clear all unused registers to avoid leaking rights and private data to the callee.
 
-Capabilities must be protected by the hardware in order to guarantee their integrity and unforgeability, yet at the same time it is highly desirable to allow capabilities to be stored together with normal data. To this end, each capability register has a tag which indicates whether it is holding a valid capability or not, and correspondingly the physical memory is required to associate a tag with every fourth word (capabilities in memory must be aligned accordingly). Only the safe instructions defined in the extended ISA can set or preserve this tag and will trap if they are invoked with invalid capabilities. Storing into memory with original MIPS instructions always clears the tag of the corresponding capability block.
+Because these are too big to fit into standard registers, CHERI extends the register file with 28 general-purpose and five specialized capability registers, and defines their function in a new ABI convention. Extra caution is required when calling less trusted code because it may not conform to the convention. Specifically, the caller must explicitly clear all unused registers to avoid leaking rights and private data to the callee.
+
+Capabilities must be protected by the hardware in order to guarantee their integrity and unforgeability, yet at the same time it is highly desirable to allow capabilities to be stored together with normal data. To this end, each capability register has a tag which indicates whether it is holding a valid capability or not, and correspondingly the physical memory is required to associate a tag with every fourth word (capabilities in memory must be aligned accordingly). The instructions defined in the extended ISA are then the only ones allowed to set this tag as they are trusted to preserve the security properties, mainly that capability manipulation must never increase rights. Storing into memory with original MIPS instructions always clears the tag of the corresponding capability block. Invoking a capability instruction with an invalid argument traps.
+
+\subsection{Pointer Indirection}
+
+As mentioned earlier, one of the prerequisities of successful compartmentalization of native code is the ability to prevent a component from accessing addresses beyond the region of the virtual address space designated to it. But at the same time, it is important that such containment is seamless in order to retain the ability to run legacy code.
+
+The solution adopted in CHERI is based on pointer indirection, where addresses of all non-capability loads and stores are treated relative to a capability that the active component carries in register \reg{C0}. Normal pointer to address \texttt{x} then always translates to \texttt{(\reg{C0}.base~+~x)} and a memory access instruction will trap if \texttt{x~>=~\reg{C0}.length}. 
+
+\reg{C0} initially contains the capability to the entire virtual address space but a less trusted component can be invoked with a capability granting access only to its subset, effectively denying the component access to the rest of the address space, yet without breaking any of its pointer arithmetic.
+
+The same principle is applied to instruction fetch from \reg{PC}, only it is indirected through \reg{PCC} which can only be set by the \insn{CCall} instruction.
+
+\subsection{Object Capabilities}
+
+As mentioned before, object capabilities are formed by a pair of sealed capabilities. The object owner first creates an unsealed capability such that the capability's type is a pointer to the entry function relative to the region defined by the base and length, i.e. \texttt{base~+~type~=~entry\_func} and \texttt{type~<=~length}. Notice that only code which already has access to memory containing the entry function can create this capability. 
+ 
+
+
+
+
+% TODO: sealing, IDC <-> C0
 
 \chapter{Related Work} 
 
