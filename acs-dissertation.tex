@@ -230,7 +230,7 @@ The same principle is applied to instruction fetch from \reg{PC}, only it is ind
 
 As mentioned before, object capabilities are formed by a pair of sealed capabilities. The object owner first creates an unsealed capability with \emph{seal} and \emph{execute} rights such that the capability's type is a pointer to the entry function relative to the region defined by the base and length, i.e. \texttt{base~+~type~=~\&function} and \texttt{type~<=~length}. Notice that only code which already has the rights to the memory containing the entry function can create this capability. 
 
-The capability is then sealed with the \insn{CSealCode} instruction, becoming the code capability of the object, and used once more in \insn{CSealData} to seal an arbitrary capability defining the memory space of the object. Both components inherit the \emph{object type} field from the unsealed capability.
+The capability is then sealed with the \insn{CSealCode} instruction, becoming the code capability of the object, and is used once more in \insn{CSealData} to seal an arbitrary capability defining the address space of the object. Both components inherit the \emph{object type} field from the unsealed capability.
 
 When a valid object capability pair is passed to the \insn{CCall} instruction, the unsealed code capability becomes the new value of \reg{PCC}, its type is assigned to \reg{PC} and the unsealed data capability is stored in \reg{IDC} (\texttt{=\reg{C27}}). Typically, the entry function should begin by copying the capability from \reg{IDC} to \reg{C0} as \reg{C0} would have been cleared by the caller.
 
