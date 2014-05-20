@@ -302,13 +302,11 @@ After a brief period of experimentation with other Java virtual machines suitabl
 \item minimum amount of platform-specific code
 \item overall simplicity of the codebase
 \end{itemize}
-The price is that JamVM is merely a Java interpreter and thus is unlikely to see any performance gain from optimizations which could be achieved with the CHERI ISA, namely hardware bounds checking (a common Java bottleneck~[REF]).
+The price is that JamVM is merely a Java interpreter and thus is unlikely to see a non-negligible performance gain from optimizations which could be achieved with the CHERI ISA, namely hardware bounds checking (a common Java bottleneck~[REF]).
 
-\section{Sandboxing Libraries}
+\section{Loading Libraries}
 
 
-
-\subsection{Security domains}
 
 \section{Enforcing memory safety}
 
