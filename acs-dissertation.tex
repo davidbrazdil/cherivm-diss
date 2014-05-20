@@ -234,7 +234,7 @@ The capability is then sealed with the \insn{CSealCode} instruction, becoming th
 
 When a valid object capability pair is passed to the \insn{CCall} instruction, the unsealed code capability becomes the new value of \reg{PCC}, its type is assigned to \reg{PC} and the unsealed data capability is stored in \reg{IDC} (\texttt{=\reg{C27}}). Typically, the entry function should begin by copying the capability from \reg{IDC} to \reg{C0} as \reg{C0} would have been cleared by the caller.
 
-Additionally, \insn{CCall} pushes the old values of \texttt{\reg{PC}~+~4}, \reg{SP}, \reg{PCC} and \reg{IDC} onto a trusted system stack, from which they are restored once the callee invokes \insn{CReturn}. Details of the trusted stack are beyond the scope of this dissertation.
+Additionally, \insn{CCall} pushes the old values of \texttt{\reg{PC}~+~4}, \reg{SP}, \reg{PCC} and \reg{IDC} onto a trusted system stack, from which they are restored once the callee invokes \insn{CReturn}.
 
 \chapter{Related Work} 
 
@@ -274,7 +274,7 @@ doesn't support dynamic loading (and by design cannot)
 
 \chapter{Design and Implementation} 
 
-This chapter may be called something else\ldots but in general 
+% This chapter may be called something else\ldots but in general 
 the idea is that you have one (or a few) ``meat'' chapters which
 describe the work you did in technical detail. 
 
