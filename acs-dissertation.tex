@@ -278,9 +278,14 @@ doesn't support dynamic loading (and by design cannot)
 the idea is that you have one (or a few) ``meat'' chapters which
 describe the work you did in technical detail. 
 
-\section{Overview}
 
-\subsection{Toolchain}
+
+\begin{figure}
+	\includegraphics[width=\textwidth]{dia_jni_caps.pdf}
+	\caption{Diagram of a Java VM running a native library in a CHERI sandbox. Solid lines represent data flow paths, dashed lines show control flow.}
+	\label{fig:OverviewCheriJNI}
+\end{figure}
+
 
 \section{Sandboxing}
 
