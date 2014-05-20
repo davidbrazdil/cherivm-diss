@@ -156,7 +156,7 @@ Just like bytecode, shared libraries are loaded by a class loader and reside in 
 
 \begin{figure}
 	\includegraphics[width=\textwidth]{dia_jni_orig.pdf}
-	\caption{Schematic diagram of the core JVM security components with respect to native code. Solid lines represent data flow paths, dashed lines show control flow.}
+	\caption{Schematic diagram of the core JVM security components with respect to native code. Solid lines represent data flow paths, dashed lines show control flow. [TODO: draw threats in red?]}
 	\label{fig:OverviewJNI}
 \end{figure}
 
@@ -274,18 +274,13 @@ doesn't support dynamic loading (and by design cannot)
 
 \chapter{Design and Implementation} 
 
-% This chapter may be called something else\ldots but in general 
-the idea is that you have one (or a few) ``meat'' chapters which
-describe the work you did in technical detail. 
-
 
 
 \begin{figure}
 	\includegraphics[width=\textwidth]{dia_jni_caps.pdf}
-	\caption{Diagram of a Java VM running a native library in a CHERI sandbox. Solid lines represent data flow paths, dashed lines show control flow.}
+	\caption{Diagram of a Java VM running a native library in a CHERI sandbox. All references are passed across the domain boundary as CHERI capabilities.}
 	\label{fig:OverviewCheriJNI}
 \end{figure}
-
 
 \section{Sandboxing}
 
