@@ -297,14 +297,16 @@ The tight integration of ART (and its numerous dependencies) to a specific platf
 
 After a brief period of experimentation with other Java virtual machines suitable for the embedded environment, the combination of JamVM and GNU Classpath framework was selected for its:
 \begin{itemize}
-\item full support of the Java and JNI specification (versions 5 and 1.4 respectively),
-\item strict compliance with POSIX standards,
-\item minimum amount of platform-specific code,
-\item overall simplicity of the codebase.
+\item complete implementation of the JVM and JNI specifications (versions~5 and 1.4 respectively)
+\item strict compliance with POSIX standards
+\item minimum amount of platform-specific code
+\item overall simplicity of the codebase
 \end{itemize}
-interpreter -> unlikely to get noticible performance gain from hardware bounds checking
+The price is that JamVM is merely a Java interpreter and thus is unlikely to see any performance gain from optimizations which could be achieved with the CHERI ISA, namely hardware bounds checking (a common Java bottleneck~[REF]).
 
 \section{Sandboxing Libraries}
+
+
 
 \subsection{Security domains}
 
