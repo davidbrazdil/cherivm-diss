@@ -274,15 +274,37 @@ doesn't support dynamic loading (and by design cannot)
 
 \chapter{Design and Implementation} 
 
-
+A proof-of-concept implementation is based on JamVM~[REF], a highly-portable and compact Java virtual machine, the GNU Classpath framework~[REF] and is comprised of XXX lines of C and XXX lines of MIPS assembly. The sandboxing code resides entirely in the virtual machine's codebase and therefore other frameworks, such as OpenJDK~[REF], Apache Harmony~[REF] or the Android framework~[REF], could just as easily be used instead.
 
 \begin{figure}
 	\includegraphics[width=\textwidth]{dia_jni_caps.pdf}
-	\caption{Diagram of a Java VM running a native library in a CHERI sandbox. All references are passed across the domain boundary as CHERI capabilities.}
+	\caption{Diagram of a Java VM running a native library in a CHERI sandbox. All references are passed across the domain boundary as capabilities.}
 	\label{fig:OverviewCheriJNI}
 \end{figure}
 
-\section{Sandboxing}
+
+An overview of the modified design is given in Figure~\ref{fig:OverviewCheriJNI}. As opposed to the the original schematic in Figure~\ref{fig:OverviewJNI}, the native library is now fully contained inside a CHERI sandbox that limits its memory access to a designated region of the virtual address space, thus preventing it from reading or modifying the state of other components. The code is not allowed to perform system calls and similarly cannot directly interact with the VM. Its only option is to invoke a trampoline function inside the host domain which performs the operation on the native code's behalf provided that it is not in conflict with the currently active security policy.
+
+In order to retain source-level backwards compatibility, the native code can be compiled against a library which provides wrappers for \emph{libc} functions and the \texttt{JNIEnv} interface, and also automatically manages the capabilities passed to the sandbox, allowing for seamless integration of legacy code into the sandboxed environment.
+
+\section{Porting Java to CHERI}
+
+Even though the MIPS64 architecture, which CHERI extends, has been around for a while~[REF], processors implementing its instruction set are yet to penetrate the consumer electronics market~[REF]. Software support for this architecture therefore still remains quite rare and its lack proved to be one of the obstacles in the early stages of this project as virtual machines always rely on at least some small amount of assembly code, typically more if optimized for performance. Likewise, the choice of the VM was limited by the fact that the only operating system ported to CHERI to date is FreeBSD, and the only compiler capable of producing CHERI code is LLVM/Clang. 
+
+Initially, efforts were invested into porting a minimal subset of the Android runtime, ideally the emerging LLVM-based ahead-of-time ART compiler~[REF] which will replace the original Dalvik VM in the future releases of Android. Porting ART to CHERI is especially attractive because it translates Dalvik bytecode (equivalent to Java bytecode) directly to native code optimized for running on resource-restricted platforms much like the CHERI prototype. Being based on LLVM, ART could also use the CHERI back-end in order to embrace the security enhancements offered by capabilities while running managed code.
+
+The tight integration of ART (and its numerous dependencies) to a specific platform and toolchain does, however, make porting it to another substrate a very time-consuming task. The obstacles of replacing GCC with LLVM/Clang in the Android build system have mostly been solved by Linaro~[REF], and ART's pre-existing MIPS32 support and LLVM nature therefore should have made emitting MIPS64/CHERI instructions a straightforward extension. Sadly, fixing its codebase, abundant in Linux-specific code and pointer arithmetic assuming 32-bit pointer length, is far beyond the time frame of this project.
+
+After a brief period of experimentation with other Java virtual machines suitable for the embedded environment, the combination of JamVM and GNU Classpath framework was selected for its:
+\begin{itemize}
+\item full support of the Java and JNI specification (versions 5 and 1.4 respectively),
+\item strict compliance with POSIX standards,
+\item minimum amount of platform-specific code,
+\item overall simplicity of the codebase.
+\end{itemize}
+interpreter -> unlikely to get noticible performance gain from hardware bounds checking
+
+\section{Sandboxing Libraries}
 
 \subsection{Security domains}
 
