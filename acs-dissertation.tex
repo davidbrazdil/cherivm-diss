@@ -328,11 +328,13 @@ The price is that JamVM is merely a Java interpreter and thus is unlikely to see
 	\label{table:addressSpaceLayout}
 \end{table}
 
-The process of loading a native library is initiated by calling the \texttt{loadLibrary} method of the \class{System} class. The VM looks for a shared object file of the given name inside lookup folders and attempts to load it with the mechanism approprite on that platform, e.g.\ \emph{libdl} on variants of UNIX. When running on CHERI, this mechanism is now defined to be \emph{libcheri} -- a library the CHERI SDK provides for managing sandbox instances. 
+The process of loading a native library is initiated by calling the \texttt{loadLibrary} method of the \class{System} class. The VM looks for a shared object file of the given name inside lookup folders and attempts to load it with the mechanism approprite fors that platform, e.g.\ \emph{libdl} on variants of UNIX. When running on CHERI, this mechanism is now defined to be \emph{libcheri} -- a library the CHERI SDK provides for managing sandbox instances. 
 
-\emph{libcheri} begins by reserving a memory region for the newly created sandbox, preparing the address space layout as summarized in Table~\ref{table:addressSpaceLayout} and memory maps the \emph{sandbox image} (library file) into that region. If successful, it returns two object capabilities. One object represents the sandbox domain, with both the code and data component equal to the designated memory space and the entry point at \texttt{0x8000} as dictated by the CHERI ABI. 
+\emph{libcheri} starts with reserving a memory region for the newly created sandbox, preparing the guest's address space layout as summarized in Table~\ref{table:addressSpaceLayout} and memory mapping the \emph{sandbox image} (library object file) into that region. If successful, it returns two object capabilities. One object represents the sandbox domain, with both the code and data component equal to the designated memory space and the entry point at \texttt{0x8000} as dictated by the CHERI ABI. 
 
 The other is a system object which the sandbox can use to invoke a method inside the host domain. Its code component is the entire address space of the process, with an entry function inside \emph{libcheri} which sets up the capability registers and hands over to a function selected by the host. In order to enable it to identify the domain it was invoked from, the data capability is set to the memory region of the sandbox. The entry function therefore does not set \reg{C0} from the data component but rather from the code capability of the object.
+
+
 
 \section{Enforcing memory safety}
 
