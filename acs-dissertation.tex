@@ -138,7 +138,7 @@ Limiting the scope of the code which can access the state also makes it possible
 
 \subsection{Java Sandbox Model}
 
-The design of the Java platform was deeply influenced by the web and the ability to dynamically load executable code from various, potentially untrusted sources into one instance of the Java virtual machine a priority. The language safety properties do protect the integrity of the memory, but just by themselves cannot prevent the external code from abusing the system resources available to the VM or interacting with code from a different source. To this end, the platform provides a number of access control mechanisms which make it poosible to execute differents portions of the loaded code with different sets of permissions available to them. 
+The design of the Java platform was deeply influenced by the web and the ability to dynamically load executable code from various, potentially untrusted sources into one instance of the Java virtual machine a priority. The language safety properties do protect the integrity of the memory, but just by themselves cannot prevent the external code from abusing the system resources available to the VM or interacting with code from a different source. To this end, the platform provides a number of access control mechanisms which make it possible to execute differents portions of the loaded code with different sets of permissions available to them. 
 
 \begin{figure}
 	\centering
@@ -150,7 +150,7 @@ Java code is loaded into the virtual machine by a special object which extends t
 
 Every Java VM provides a simple "primordial" class loader implemented in native code which bootstraps the framework and immediately hands the process over to its loader. Code with sufficient permissions can then define new, potentially simultaneosly active class loaders and arrange them into hierarchies. Since class loaders are also responsible for resolving classes and methods for the code loaded by them, they can be used to create local namespaces, effectively isolating codebases which should not be allowed to interact.
 
-The last component of the Java sandbox is a reference monitor, called the Security Manager. Before untrusted code is called, the parent can set a thread-local reference to a \texttt{SecurityManager} object which implements the security policy that is to be enforced upon it. Should the untrusted code attempt to access system or VM resources during its execution, it must do so through the framework API and these methods always consult the active Security Manager before access is granted.
+The last component of the Java sandbox is a reference monitor, called the Security Manager. Before untrusted code is called, the parent can set a thread-local reference to a \class{SecurityManager} object which implements the security policy that is to be enforced. Should the untrusted code attempt to access system or VM resources during its execution, it must do so through the framework API and these methods always consult the active Security Manager before access is granted.
 
 \subsection{Java Native Interface}
 
@@ -171,15 +171,15 @@ Just like bytecode, shared libraries are loaded by a class loader and reside in 
 
 Developers are provided with a C/C++ header which contains the definitions of types compatible with the primitive types used in Java, the \texttt{jobject} type to represent object references (typically pointers to the object heap) and the \texttt{JNIEnv} data structure containing functions that provide an API for interfacing with the VM, such as reading/assigning values of object fields, creating new objects, or invoking other methods in the Java environment. A pointer to an instance of \texttt{JNIEnv} is passed to the function together with the actual parameters of the corresponding method call. Figure~\ref{fig:OverviewJNI} gives a simplified overview of the architecture, and Figure~\ref{listing:HelloJNI} shows an example of a simple Java class with a \texttt{native} method implemented in C.
 
-However, the Java platform does not provide any means of containing native code. Because it resides in the same virtual address space as the VM, it does have unlimited access to the object heap and can both read and modify any object data on it, including the class loaders and other security-critical classes. Similarly, native code can perform system calls without the knowledge of the security monitor or even modify the state of the virtual machine.
+However, the Java platform does not provide any means of containing native code. Because it resides in the same virtual address space as the VM, it does have unlimited access to the object heap and can both read and modify any object data on it, including the class loaders. Similarly, native code can perform system calls without the knowledge of the security monitor or even modify the state of the virtual machine.
 
-What follows from this is that only applications which are written in pure Java can be sandboxed as any native code attached to the virtual machine can circumvent all of the security mechanisms it provides. Hence giving a piece of code the permission to load native libraries is equivalent to giving it all the other permissions as well as unlimited access to the state of the VM. This permission must therefore be taken away from all sandboxed code.
+What follows from this is that only applications which are written in pure Java can be sandboxed as any native code attached to the virtual machine can circumvent all of the security mechanisms the platform provides. Hence giving a piece of code the permission to load native libraries is equivalent to giving it all the other permissions as well as unlimited access to the state of the VM. This permission must therefore be taken away from all sandboxed code.
 
 \subsection{Trust and Native Code}
 
 Previous sections have explained the role of the three pillars of Java security: language safety, secure class loading and a reference monitor. To understand how native code fits into this picture, it is essential to understand the relationship between these three components and the assumptions they make.
 
-The Java VM consists mainly of: bytecode interpreter (or a compiler into native code), a minimal class manager with a bytecode verifier, memory management code and a small set of low-level classes implemented in native code which faciliate communication between the VM and the managed code, e.g. to provide reflection. The entire VM codebase must be fully trusted and guarantee that only safe code will ever be executed.
+A Java VM consists mainly of: bytecode interpreter (or a compiler into native code), a minimal class manager with a bytecode verifier, memory management code and a small set of low-level classes implemented in native code which faciliate communication between the VM and the managed code, e.g. to provide reflection. The entire VM codebase must be fully trusted and it must ensure that only safe code will ever be executed.
 
 The Java framework, on the other hand, is mostly written in Java with a relatively small number of native methods which give managed code access to system calls and only these therefore need to be trusted to not violate language safety. The framework includes classes which abstract over the system resources, provides its own class loader, which selects the appropriate security policy and passes bytecode over to the VM's verifier and loader, and a default implementation of the security manager. All of these Java classes, as well as the native code, are trusted to not compromise the class hierarchy and to always enforce the active security policy.
 
@@ -195,7 +195,7 @@ Capability Hardware Enhanced RISC Instructions (CHERI) is an extension of the co
 
 Applications can use CHERI capabilities in many ways. The most elementary use case is treating them as fat pointers [REF], i.e.\ pointers with an upper limit. This is particularly useful when dealing with pointers to arrays or data structures as the hardware automatically performs zero-overhead runtime bounds checking and thus prevents exploitation of buffer overflow bugs. 
 
-CHERI capabilities can also be sealed, in which case they cannot be used in load/store instructions any more and become pure tokens of authority exchanged between the individual software components. These are the underlying support for the idea of \emph{object capabilities} that can be used to implement protection domains. An object capability consists of a pair of sealed capabilities: 
+CHERI capabilities can also be sealed, in which case they cannot be used in load/store instructions any more and become pure tokens of authority exchanged between the components. These are the underlying support for the idea of implementing protection domains with \emph{object capabilities}. An object capability consists of a pair of sealed capabilities: 
 \begin{inparaenum}[\itshape a\upshape)]
 \item a memory region designated to the object (\emph{data capability}), and
 \item a pointer to an entry function (\emph{code capability}).
@@ -222,9 +222,9 @@ Capabilities must be protected by the hardware in order to guarantee their integ
 
 As mentioned earlier, one of the prerequisities of successful compartmentalization of native code is the ability to prevent a component from accessing addresses beyond the region of the virtual address space designated to it. But at the same time, it is important that such containment is seamless in order to retain the ability to run legacy code.
 
-The solution adopted in CHERI is based on pointer indirection, where addresses of all non-capability loads and stores are treated relative to a capability that the active component carries in register \reg{C0}. Normal pointer to address \texttt{x} then always translates to \texttt{(\reg{C0}.base~+~x)} and a memory access instruction will trap if \texttt{x~>=~\reg{C0}.length}. 
+The solution adopted in CHERI is based on pointer indirection, where addresses of all non-capability loads and stores are treated relative to a capability that the active component carries in register \reg{C0}. Normal pointer to address \texttt{x} then always translates to \texttt{\reg{C0}.base~+~x} and a memory access instruction will trap if \texttt{x~>=~\reg{C0}.length}. 
 
-\reg{C0} initially contains the capability to the entire virtual address space but a less trusted component can be invoked with a capability granting access only to its subset, effectively denying the component access to the rest of the address space, yet without breaking any of its pointer arithmetic.
+\reg{C0} initially contains the capability to the entire virtual address space but a less trusted component can be invoked with a capability granting access only to its subset, effectively denying the component access to the rest of the address space without breaking any of its internal pointer arithmetic.
 
 The same principle is applied to instruction fetch from \reg{PC}, only it is indirected through \reg{PCC} which can only be set by the \insn{CCall} instruction.
 
