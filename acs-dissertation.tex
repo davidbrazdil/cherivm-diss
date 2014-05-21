@@ -306,7 +306,9 @@ After a brief period of experimentation with other Java virtual machines suitabl
 \end{itemize}
 The price is that JamVM is merely a Java interpreter and thus is unlikely to see a non-negligible performance gain from optimizations which could be achieved with the CHERI ISA, namely hardware bounds checking (a common Java bottleneck~[REF]).
 
-\section{Loading Libraries}
+\section{Library Loading}
+
+The process of loading a native library is initiated by calling the \texttt{loadLibrary} method of the \class{System} class. The VM looks for a shared object file of the given name inside lookup folders and attempts to load it with the mechanism approprite fors that platform, e.g.\ \emph{libdl} on variants of UNIX. When running on CHERI, this mechanism is now defined to be \emph{libcheri} -- a library the CHERI SDK provides for managing sandbox instances. 
 
 \begin{table}
 	\centering
@@ -328,13 +330,15 @@ The price is that JamVM is merely a Java interpreter and thus is unlikely to see
 	\label{table:addressSpaceLayout}
 \end{table}
 
-The process of loading a native library is initiated by calling the \texttt{loadLibrary} method of the \class{System} class. The VM looks for a shared object file of the given name inside lookup folders and attempts to load it with the mechanism approprite fors that platform, e.g.\ \emph{libdl} on variants of UNIX. When running on CHERI, this mechanism is now defined to be \emph{libcheri} -- a library the CHERI SDK provides for managing sandbox instances. 
-
 \emph{libcheri} starts with reserving a memory region for the newly created sandbox, preparing the guest's address space layout as summarized in Table~\ref{table:addressSpaceLayout} and memory mapping the \emph{sandbox image} (library object file) into that region. If successful, it returns two object capabilities. One object represents the sandbox domain, with both the code and data component equal to the designated memory space and the entry point at \texttt{0x8000} as dictated by the CHERI ABI. 
 
 The other is a system object which the sandbox can use to invoke a method inside the host domain. Its code component is the entire address space of the process, with an entry function inside \emph{libcheri} which sets up the capability registers and hands over to a function selected by the host. In order to enable it to identify the domain it was invoked from, the data capability is set to the memory region of the sandbox. The entry function therefore does not set \reg{C0} from the data component but rather from the code capability of the object.
 
 This mechanims is sound and works well for simple examples, but it is still quite primitive. The sandbox image must be a statically linked binary stripped off any relocation and symbol information so it can be directly mapped to memory and have the entry point at a fixed offset. This currently makes it equivalent to Robusta. Conceptually, however, there is no reason why dynamically linked code could not be loaded into the sandbox. As the platform matures, it should therefore become possible to sandbox shared libraries without having to relink them first.
+
+\section{Method Resolution}
+
+
 
 \section{Enforcing memory safety}
 
