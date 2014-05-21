@@ -334,11 +334,11 @@ The process of loading a native library is initiated by calling the \texttt{load
 
 The other is a system object which the sandbox can use to invoke a method inside the host domain. Its code component is the entire address space of the process, with an entry function inside \emph{libcheri} which sets up the capability registers and hands over to a function selected by the host. In order to enable it to identify the domain it was invoked from, the data capability is set to the memory region of the sandbox. The entry function therefore does not set \reg{C0} from the data component but rather from the code capability of the object.
 
-This mechanims is sound and works well for simple examples, but it is still quite primitive. The sandbox image must be a statically linked binary stripped off any relocation and symbol information so it can be directly mapped to memory and have the entry point at a fixed offset. This currently makes it equivalent to Robusta. Conceptually, however, there is no reason why dynamically linked code could not be loaded into the sandbox. As the platform matures, it should therefore become possible to sandbox shared libraries without having to relink them first.
+This mechanims is sound and works well for simple examples, but it is still quite primitive. The sandbox image must be a statically linked binary stripped off any relocation and symbol information, so it can be directly mapped to memory, and have the entry point at a fixed offset. This currently makes it equivalent to Robusta. Conceptually, however, there is no reason why dynamically linked code could not be loaded into the sandbox. As the platform matures, it should therefore become possible to sandbox shared libraries without having to relink them first.
 
 \section{Method Resolution}
 
-
+Re
 
 \section{Enforcing memory safety}
 
