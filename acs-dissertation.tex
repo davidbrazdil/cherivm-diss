@@ -379,7 +379,29 @@ Legacy code compiled against \lib{qishr} is provided with a wrapper which automa
 \label{sec:MemorySafety}
 \label{sec:CapabilityManager}
 
+\begin{figure}[t]
+	\begin{lstlisting}[language=C]
+jobject point;
 
+// ...
+
+jclass clazz = (*env)->FindClass(env, "java/awt/Point");
+if (clazz == NULL) { /* class not found */ }
+
+jfieldID fid = (*env)->GetFieldID(env, clazz, "x", "I");
+if (fid == NULL) { /* field not found */ }
+
+(*env)->SetIntField(env, point, fid, 1234);
+	\end{lstlisting}
+	\caption{JNI code setting the value of a public field.}
+	\label{listing:SetFieldValue}
+\end{figure}
+
+In order to interact with the runtime class hierarchy and the internals of Java objects, native code must first request handlers to these elements, namely class objects, method identifiers and field identifiers, which it later uses in \texttt{JNIEnv} calls. Figure~\ref{listing:SetFieldValue} shows an example of such call, acquiring the handle to the \class{Point} class, its \keyword{public} field \texttt{x} and assigning it an integer value.
+
+access control
+
+\subsection{Object References}
 
 \subsection{Garbage Collection}
 
