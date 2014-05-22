@@ -360,7 +360,11 @@ The number of arguments is currently limited to 6 primitives and 6 objects which
 
 \lib{qishr}'s entry function implementation stores the capabilities to Java objects in its capability manager (\S\ref{sec:CapabilityManager}) and replaces them with pointers to its internal object heap. It then scans the method's signature so as to correctly order the arguments and invokes the function at the given address (it trusts the host to pass it a valid handler) according to the MIPS N64 ABI convention. If the return value is a Java object, the internal pointer is first replaced by the corresponding capability retrieved from the capability manager.
 
-\subsection{Exception Handling}
+\subsection{Trap Handling}
+
+At the time of writing, Qishr does not handle the situation when the sandboxed code causes a capability-related exception, such as violating the permissions or length. Until very recently, the operating system would handle CHERI traps simply by setting \reg{v0} to negative one, \reg{v1} to the error code and returning to the most recent caller (popping the trusted stack). Because this does not allow the caller to reliably distinguish a successful call from an erroneous one, it has been replaced with sending a UNIX signal to the process without popping, i.e.\ to the active sandbox. 
+
+The sandboxed code could embrace this mechanism to recover from the trap and to throw an appropriate Java exception. It would, however, be necessary to further consider how the host could recognize an unhandled trap... [ TODO ]
 
 \section{Memory safety}
 \label{sec:MemorySafety}
