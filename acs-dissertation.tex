@@ -245,7 +245,7 @@ Additionally, \insn{CCall} pushes the old values of \texttt{\reg{PC}~+~4}, \reg{
 
 One of the prevailing limitations of the CHERI prototype is that the trusted thread stack capability is not thread-local and hence it is not safe to perform multiple object calls simultaneously. 
 
-For this reason, the VM is currently forced to acquire a global reentrant lock before it invokes a sandbox object. Multithreaded access to the sandbox is also not discussed in this dissertation and its implications on the protection mechanisms would require very careful and detailed consideration.
+For this reason, the host is currently forced to acquire a (reentrant) lock before it invokes an object capability. Multithreaded access to the sandbox is also not discussed in this dissertation and its implications on the protection mechanisms would require very careful and detailed consideration.
 
 \chapter{Related Work} 
 
