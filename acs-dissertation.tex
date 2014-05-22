@@ -30,7 +30,7 @@
 \newcommand{\keyword}[1]{\textsf{#1}}
 \newcommand{\class}[1]{\texttt{#1}}
 \newcommand{\tool}[1]{\emph{#1}}
-\newcommand{\lib}[1]{lib\tool{#1}}
+\newcommand{\lib}[1]{\tool{lib#1}}
 
 
 %% START OF DOCUMENT
@@ -127,7 +127,7 @@ Additionally, the Java framework provides a large set of extensible security API
 
 The security of the Java platform is deeply rooted in the type, memory and control flow safety properties of its executable code. The language and the instruction set were crafted in a way that program bugs are likely to be caught by the compiler and pre-execution bytecode verifier, and other will raise an exception at runtime. 
 
-% Java's type system is dynamic, although most types are actually checked statically for the sake of performance. Operations which are checked at runtime include array assignments, operations on generic classes and type casts. Unfortunately, the type inference algorithm has been shown to contain vulnerabilities~\cite{Suenaga:2012:JavaVulnerability} which make way to type confusion attacks~\cite{Oh:2012:JavaExploitReport} and these can subsequently be exploited to bypasss the security of the entire platform~\cite{McGraw:1999:SJG:298616}.
+Java's type system is dynamic, although most types are actually checked statically for the sake of performance. Operations which are checked at runtime include array assignments, operations on generic classes and type casts. Unfortunately, the type inference algorithm has been shown to contain vulnerabilities~\cite{Suenaga:2012:JavaVulnerability} which make way to type confusion attacks~\cite{Oh:2012:JavaExploitReport} and these can subsequently be exploited to bypasss the security of the entire platform~\cite{McGraw:1999:SJG:298616}.
 
 Memory safety in Java is strongly connected to the principles of OOP. Code does not have direct access to the heap but rather has to adhere to a model of a memory space structured into object instances and their internal fields protected by the reference monitor, accessed through opaque references and automatically managed by the garbage collector. Together with the type system and explicit range checks, Java prevents common bugs which can give the attacker access to an arbitrary part of the memory, such as buffer overflow or dangling pointers.
 
@@ -340,6 +340,7 @@ The process of loading a native library is initiated by calling the \texttt{load
 
 \lib{cheri} starts with reserving a memory region for the newly created sandbox, preparing the guest's address space layout as summarized in Table~\ref{table:addressSpaceLayout} and memory mapping the \emph{sandbox image} (library object file) into that region. If successful, it returns two object capabilities. One object represents the sandbox domain, with both the code and data component equal to the designated memory space and the entry point at \texttt{0x8000} as dictated by the CHERI ABI. 
 
+\label{sec:SystemObject}
 The other is a system object which the sandbox can use to invoke a method inside the host domain. Its code component is the entire address space of the process, with an entry function inside \lib{cheri} which sets up the capability registers and hands over to a function selected by the host. In order to enable it to identify the domain it was invoked from, the data capability is set to the memory region of the sandbox. The entry function therefore does not set \reg{C0} from the data component but rather from the code capability of the object.
 
 This mechanims is sound and works well for simple examples, but it is still quite undeveloped. The sandbox image must be a statically linked binary stripped off any relocation and symbol information -- so it can be directly mapped to memory -- and have the entry point at a fixed offset. This currently makes it equivalent to Robusta. Conceptually, however, there is no reason why dynamically linked code could not be loaded into the sandbox. As the platform matures, it should therefore become possible to sandbox shared libraries without having to relink or strip them first.
@@ -364,14 +365,30 @@ The number of arguments is currently limited to 6 primitives and 6 objects which
 
 At the time of writing, Qishr does not handle the situation when the sandboxed code causes a capability-related exception, such as violating the permissions or length. Until very recently, the operating system would handle CHERI traps simply by setting \reg{v0} to negative one, \reg{v1} to the error code and returning to the most recent caller (popping the trusted stack). Because this does not allow the caller to reliably distinguish a successful call from an erroneous one, it has been replaced with sending a UNIX signal to the process without popping, i.e.\ to the active sandbox. 
 
-The sandboxed code could embrace this mechanism to recover from the trap and to throw an appropriate Java exception. It would, however, be necessary to further consider how the host could recognize an unhandled trap... [ TODO ]
-
-\section{Memory safety}
-\label{sec:MemorySafety}
-
-\label{sec:CapabilityManager}
+The sandboxed code could embrace this mechanism to recover from traps and to throw appropriate Java exceptions. It would, however, be necessary to further consider how the host could recognize an unhandled trap... [ TODO ]
 
 \section{Interaction with the VM}
+
+The \texttt{JNIEnv} data structure, which each native method receives as its first argument, is the main communication gateway between native code and the managed environment. But because its designers assumed that native code can bypass it any way, it completely lacks any form of protection against misbehaving code. With the native code sandboxed, a \texttt{JNIEnv}-like interface can be the only channel between the sandbox and the VM core, and protecting the core's integrity in the presence of untrusted code becomes worthwhile.
+
+This interface is implemented using the system object capability (\S\ref{sec:SystemObject}) which invokes a \texttt{JNIEnv} trampoline in the system domain. The calling convention again assumes that the first primitive argument is the operation code and the remaining registers are used for the actual parameters of the operation. Most of the operations retain the same semantics as their original counterparts, and will simply delegate the call to the corresponding \texttt{JNIEnv} function after the correctness of the arguments is verified. 
+
+Legacy code compiled against \lib{qishr} is provided with a wrapper which automatically translates \texttt{JNIEnv} invocations to \insn{CCall}s into the host domain.
+
+\subsection{Native Handles}
+\label{sec:MemorySafety}
+\label{sec:CapabilityManager}
+
+
+
+\subsection{Garbage Collection}
+
+\subsection{Array Operations}
+
+\subsection{Direct Buffers}
+\label{sec:DirectBuffers}
+
+\subsection{State Consistency}
 
 \section{System Calls}
 
@@ -379,7 +396,7 @@ all Java domains - language safety, security policies
 
 VM domain remains the only one that can do system calls => GNU Classpath now provides services around system calls but those must go through the trusted trampoline
 
-\section{Garbage Collection}
+\subsection{Threads}
 
 \chapter{Evaluation} 
 
