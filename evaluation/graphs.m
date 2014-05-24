@@ -12,13 +12,17 @@ xlab = { 'getPublicKeySize'
          'initIDs'
          'generateKeys' };
 
-ylab = 'running time diff / %'
+ylab = 'running time diff / %';
+
+lege = { 'standard JNI' 'JNI with no direct buffers' 'Qishr' };
 
 figure
 colormap('summer');
-barwitherr(errY, Y);
+handle = barwitherr(errY, Y);
+grid on
 set(gca, 'XTickLabel', xlab, 'XTick', 1:numel(xlab))
 ylabel(ylab);
+legend(handle, lege);
 
 % add a horizontal line at 100%
 hold on
