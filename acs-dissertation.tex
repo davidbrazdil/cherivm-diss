@@ -80,10 +80,9 @@
 
 \chapter{Introduction}
 
-Writing software in Java and other safe programming languages has inherent benefits, namely a higher guaranteed level of robustness, reliability and portability. Yet large software systems are hardly ever written in just one language as the development process can create strong incentives to save time by using third-party libraries or legacy code, or to implement some components in a more suitable language, most often in attempt to improve performance. According to recent reports, 20\% of the most popular applications on the Google Play store do ship with native libraries~\cite{poeplau2014execute}. However, the lack of safety makes native code a threat as it has the potential to compromise the entire Java runtime including its code safety properties and core security mechanisms.
+Writing software in Java and other safe programming languages has inherent benefits, namely a higher guaranteed level of robustness, reliability and portability. Yet large software systems are hardly ever written in just one language as the development process can create strong incentives to save time by using third-party libraries or legacy code, or to implement some components in a more suitable language, most often in attempt to improve performance. However, the lack of safety makes native code a threat as it has the potential to compromise the entire Java runtime including its code safety properties and core security mechanisms.
 
-
-
+According to reports from August 2013, approximately 20\% of the most popular applications on the Google Play store indeed do ship with native libraries~\cite{poeplau2014execute}. Security of those applications is much more fragile since any bug inside the native code might have much larger reprecussions than one contained within the managed portion of the codebase. Worryingly, such vulnerabilities have been discovered even inside the native code of the official Java Development Kit framework~\cite{Tan:2008:ESS:1496711.1496736}. 
 
 \chapter{Background} 
 
