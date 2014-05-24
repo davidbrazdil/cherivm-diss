@@ -84,7 +84,7 @@ Writing software in Java and other safe programming languages has inherent advan
 
 According to reports from August 2013, approximately 20\% of the most popular applications on the Google Play store indeed do ship with native libraries~\cite{poeplau2014execute}. Protection of all those applications is more fragile since any bug inside the native code might have much larger repercussions than one contained within the managed portion of the codebase. Worryingly, many critical native code vulnerabilities have been discovered even inside the official Java Development Kit (JDK) framework~\cite{Tan:2008:ESS:1496711.1496736}. 
 
-To the enterprise environment, where security tends to be prioritized, Java is a platform capable of executing untrusted applications inside a safe environment that limits its access to system resources (a \emph{sandbox}), and even running multiple such applications side-by-side inside one instance of the virtual machine. But the inability to isolate native code in the same manner dictates that only applications written eclusively for the Java Virtual Machine (JVM) can be controlled this way.
+To the enterprise environment, where security tends to be prioritized, Java is a platform capable of executing untrusted applications inside a safe environment that limits its access to system resources (a \emph{sandbox}), and even running multiple such applications side-by-side inside one instance of the virtual machine. But the inability to constrain native code in the same manner dictates that only applications written eclusively for the Java Virtual Machine (JVM) can be controlled this way.
 
 
 
