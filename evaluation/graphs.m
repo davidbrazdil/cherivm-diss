@@ -14,7 +14,7 @@ xlab = { 'getPublicKeySize'
 
 ylab = 'running time diff / %';
 
-lege = { 'standard JNI' 'JNI with no direct buffers' 'Qishr' };
+lege = { 'JNI with direct buffers' 'JNI without direct buffers' 'Qishr' };
 
 figure
 colormap('summer');
