@@ -378,9 +378,9 @@ The number of arguments is currently limited to 6 primitives and 6 objects which
 
 \subsection{Trap Handling}
 
-At the time of writing, Qishr does not handle the situation when the sandboxed code causes a capability-related exception, such as violating the permissions or length. Until very recently, the operating system would handle CHERI traps simply by setting \reg{v0} to negative one, \reg{v1} to the error code and returning to the most recent caller (popping the trusted stack). Because this does not allow the caller to reliably distinguish a successful call from an erroneous one, it has been replaced with sending a UNIX signal to the process without popping, i.e.\ to the active sandbox. 
+At the time of writing, Qishr does not handle situations when the sandboxed code causes a capability-related exception, such as violating the permissions or length. Until very recently, the operating system would handle CHERI traps simply by setting \reg{v0} to negative one, \reg{v1} to the error code and returning to the most recent caller (popping the trusted stack). Because this does not allow the caller to reliably distinguish a successful call from an erroneous one, it has been replaced with sending a UNIX signal to the process but without returning from the domain first.
 
-The sandboxed code could embrace this mechanism to recover from traps and to throw appropriate Java exceptions. It would, however, be necessary to further consider how the host could recognize an unhandled trap... [ TODO ]
+The sandboxed code could embrace this mechanism to recover from traps and to throw appropriate Java exceptions. It would, however, be necessary to carefully consider the potential effects of allowing the sandbox to handle UNIX signals on the rest of the virtual machine~\cite{989483}.
 
 \section{Interaction with the VM}
 
