@@ -390,9 +390,8 @@ This interface is implemented using the system object capability (\S\ref{sec:Sys
 
 Legacy code compiled against \lib{qishr} is provided with a wrapper which translates JNI upcalls to \insn{CCall}s into the host domain.
 
-\subsection{Native Handles}
+\subsection{Memory Safety}
 \label{sec:MemorySafety}
-\label{sec:CapabilityManager}
 
 \begin{figure}[t]
 	\begin{lstlisting}[language=C]
@@ -412,15 +411,25 @@ if (fid == NULL) { /* field not found */ }
 	\label{listing:SetFieldValue}
 \end{figure}
 
-The main purpose of \texttt{JNIEnv} is enabling the native code to interact with the class hierarchy and the internals and interface of objects in an efficient manner. To this end, native code can request three types of handlers: field identifiers, method identifiers and object references (include class references). Classes, fields and methods are typically requested by their name and JNI returns pointers to the corresponding internal data structures of the VM which makes subsequent upcalls fast. An example of assigning a value to a \keyword{public} field is shown in Figure~\ref{listing:SetFieldValue}. Note that native code is allowed to cache the identifiers but class references are normal object references which can be garbage collected between invocations (\S\ref{sec:LocalAndGlobalRefs}). 
+The main purpose of \texttt{JNIEnv} is enabling the native code to interact with the class hierarchy and the internals and interface of objects in an efficient manner. To this end, native code can request three types of handlers: field identifiers, method identifiers and object references (include class references). Handlers to classes and their members are typically requested by their name, and JNI returns pointers to the corresponding internal data structures of the VM which makes subsequent upcalls fast. An example of assigning a value to a \keyword{public} field is shown in Figure~\ref{listing:SetFieldValue}. Note that native code is allowed to cache the identifiers but class references are normal object references which can be garbage collected between invocations (\S\ref{sec:LocalAndGlobalRefs}). 
 
-The main problem with handles is, of course, that they can be forged. For instance, simple arithmetic on an existing object reference suffices to compute the handle of the following object on the heap. This can be prevented with sophisticated bookkeeping at the cost of performance, and indeed enterprise JVMs do that, but with CHERI there is another way. 
+The two main problems with handles are, of course, that they can be dereferenced and forged. For instance, simple arithmetic on an existing object reference suffices to access its private fields as well as compute the handle of the following object on the heap. This can be prevented with sophisticated bookkeeping at the cost of performance, and indeed enterprise JVMs do that, but with CHERI there is another way. 
 
-Because sealed capabilities cannot be tampered with, only passed around, these truly opaque and unforgeable data structures are ideal for representing native handles. The unforgeability is given by the fact that the the \insn{CSealData} instruction copies the object type field from the sealing capability to the result. This field is a 64-bit pointer within the bounds of the sealing capability. Therefore, by setting this field to a location that the sandbox does not have acces to, the sandbox will not be able to generate the sealing capability and will not be able to forge the handles. Having multiple sealing capabilities also enables the sandbox to easily distinguish between different types of native handles.
+\subsubsection{Safe Handles}
 
-access control
+Because sealed capabilities cannot be tampered with, only passed around, these truly opaque and unforgeable data structures are ideal for representing native handles. The unforgeability is given by the fact that the the \insn{CSealData} instruction copies the object type field from the sealing capability to the result. This field is a 64-bit pointer within the bounds of the sealing capability. Therefore, by setting this field to a location that the sandbox does not have acces to, the sandbox will not be able to create the sealing capability and consequently forge the handles. Having multiple sealing capabilities also enables the sandbox to easily distinguish between different types of native handles.
 
-\subsection{Object References}
+Source code written for JNI is built against a header which defines the \texttt{jobject}, \texttt{jfieldID} and \texttt{jmethodID} C/C++ types as \texttt{void*} pointers, but the JNI specification forbids most operations on them. Apart from pointer arithmetic, JNI code should not even test for equality\footnote{\texttt{IsSameObject} upcall should be used instead} as the specification permits two handles to reference one object. The only allowed operation is testing an upcall return value against \texttt{NULL} which in many cases signals an error. Here Qishr employs the fact that Clang for CHERI converts an equality test of a pointer and a capability into a test of its base address. The trampoline will therefore return the \texttt{NULL} capability (an unsealed capability with base and length equal to zero), in which case such test will pass, and a non-\texttt{NULL} sealed capability otherwise. 
+
+Qishr provides its own \texttt{jni.h} header which changes the type definitions of the native handlers. Well-written code should not have any problems building against it as the compiler should automatically modify the layout of all data structures so that capabilities are correctly aligned in memory.
+
+\subsubsection{Access to Class Members}
+
+Safe handles protect against arbitrary access to the address space, but they do not enforce the rules of access control among Java objects, which still allows native code to request handles of class members which should not be visible to it. The reason why this was not a part of the JNI specification is that native code could easily modify the Java stack and hence change the \emph{execution context}, i.e.\ the class it appeared to be a member of. Since the Java stack is now also protected by the sandbox, the about execution context information can be trusted and Qishr can enforce this policy at the \texttt{JNIEnv} trampoline. Native code still has the option of using reflection, just like managed code, but the difference is that the use of reflection can be forbidden by the security manager.
+
+This way, Qishr can guarantee the memore safety of native code towards Java objects and other internal data structures. Additionally, Qishr can assist as a debugging tool because any violation of these properties will be discovered either by the compiler or will cause traps at runtime.
+
+\subsection{Memory Management}
 
 \subsubsection{Local and Global References}
 \label{sec:LocalAndGlobalRefs}
@@ -431,6 +440,10 @@ access control
 
 \subsection{Direct Buffers}
 \label{sec:DirectBuffers}
+
+\subsection{Method Invocation}
+
+variadic functions
 
 \subsection{State Consistency}
 
