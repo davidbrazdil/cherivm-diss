@@ -227,7 +227,7 @@ Capabilities must be protected by the hardware yet at the same time it is highly
 
 As mentioned earlier, one of the prerequisities of successful compartmentalization of native code is the ability to prevent a component from accessing addresses beyond the region of the virtual address space designated to it. But at the same time, it is important that such containment is seamless in order to retain the ability to run legacy code.
 
-The solution adopted in CHERI is based on pointer indirection, where addresses of all non-capability loads and stores are treated relative to a capability that the active component carries in register \reg{C0}. Normal pointer to address \texttt{x} then always translates to \texttt{\reg{C0}.base~+~x} and a memory access instruction will trap if \texttt{x~>=~\reg{C0}.length}. 
+The solution adopted in CHERI is based on pointer indirection, where addresses of all non-capability loads and stores are treated relative to a capability that the active domain carries in register \reg{C0}. Normal pointer to address \texttt{x} then always translates to \texttt{\reg{C0}.base~+~x} and a memory access instruction will trap if \texttt{x~>=~\reg{C0}.length}. 
 
 \reg{C0} initially contains the capability to the entire virtual address space but a less trusted component can be invoked with a capability granting access only to its subset, effectively denying the component access to the rest of the address space without breaking any of its internal pointer arithmetic.
 
