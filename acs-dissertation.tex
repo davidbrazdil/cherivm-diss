@@ -370,7 +370,7 @@ For the time being, Qishr uses a simple workaround. When the entry function is i
 
 \subsection{Invocation}
 
-Operation code \texttt{2} is designated for method invocation. The host calls the sandbox object with the handle of the native method it previously acquired in \reg{a1}, the method's signature as a string in \reg{C1} and the actual parameters in the remaining registers. Primitive arguments are stored in the standard MIPS registers and Java objects as sealed capabilities (\S\ref{sec:MemorySafety}) in the capability registers. Respectively, registers \reg{v0} and \reg{C3} are to be used by the sandbox for the return value.
+Operation code \texttt{2} is designated for method invocation, in JNI referred to as \emph{downcall}. The host calls the sandbox object with the handle of the native method it previously acquired in \reg{a1}, the method's signature as a string in \reg{C1} and the actual parameters in the remaining registers. Primitive arguments are stored in the standard MIPS registers and Java objects as sealed capabilities (\S\ref{sec:MemorySafety}) in the capability registers. Respectively, registers \reg{v0} and \reg{C3} are to be used by the sandbox for the return value.
 
 The number of arguments is currently limited to 6 primitives and 6 objects which is enough for most practical purposes, but the JNI specification allows functions to have up to 255 arguments of any type. A straightforward solution would be to reserve one of the capability registers to pass in a pointer to a buffer containing the arguments which did not fit into registers, much like the MIPS ABI which stores first four arguments in registers and the remainder on the stack.
 
