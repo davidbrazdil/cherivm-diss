@@ -143,7 +143,7 @@ Individual classes are separate protection domains which only permit the modific
 
 \subsection{Java Sandbox Model}
 
-The design of the Java platform was deeply influenced by the web and the ability to dynamically load executable code from various, potentially untrusted sources into one instance of the Java virtual machine a priority. The language safety properties do protect the integrity of the memory, but just by themselves cannot prevent the external code from abusing the system resources available to the VM or interacting with code from a different source. To this end, the platform provides a number of access control mechanisms which make it possible to execute differents portions of the loaded code with different sets of permissions available to them. 
+The design of the Java platform was deeply influenced by the web and the need to dynamically load executable code from various, potentially untrusted sources into one instance of the Java virtual machine. The language safety properties do protect the integrity of the memory, but just by themselves cannot prevent the external code from abusing the system resources available to the VM or interacting with code from a different source. To this end, the platform provides a number of access control mechanisms which make it possible to execute differents portions of the loaded code with different sets of permissions available to them. 
 
 \begin{figure}
 	\centering
@@ -151,11 +151,11 @@ The design of the Java platform was deeply influenced by the web and the ability
 	\caption{Class loading in Java}
 \end{figure}
 
-Java code is loaded into the virtual machine by a special object which extends the \class{ClassLoader} class. The main task of a class loader is extracting bytecode from some external source and passing it on to the bytecode verifier which determines whether it complies with the required language safety properties. Typically it also selects the desired security policy which will be later enforced upon it, and it is the class loader's task to make sure that the newly loaded code will not replace any existing classes (including itself and other security-critical classes) unless this is explicitly allowed. 
+Java code is loaded into the virtual machine by a special objects called class loaders. The main task of a class loader is extracting bytecode from some external source and passing it on to the bytecode verifier which determines whether it complies with the required language safety properties. Typically it also selects the desired security policy which will be later enforced upon it, and it is the class loader's task to make sure that the newly loaded code will not replace any existing classes (including itself and other security-critical classes) unless this is explicitly allowed. 
 
 Every Java VM provides a simple "primordial" class loader implemented in native code which bootstraps the framework and immediately hands the process over to its loader. Code with sufficient permissions can then define new, potentially simultaneosly active class loaders and arrange them into hierarchies. Since class loaders are also responsible for resolving classes and methods for the code loaded by them, they can be used to create local namespaces, effectively isolating codebases which should not be allowed to interact.
 
-The last component of the Java sandbox is a reference monitor, called the Security Manager. Before untrusted code is called, the parent can set a thread-local reference to a \class{SecurityManager} object which implements the security policy that is to be enforced. Should the untrusted code attempt to access system or VM resources during its execution, it must do so through the framework API and these methods always consult the active Security Manager before access is granted.
+The last component of the Java sandbox is a reference monitor, called the security manager. Before untrusted code is called, the parent can set a thread-local reference to a \class{SecurityManager} object which implements the security policy that is to be enforced. Should the untrusted code attempt to access system or VM resources during its execution, it must do so through the framework API and these methods always consult the active Security Manager before access is granted.
 
 \subsection{Java Native Interface}
 
