@@ -386,9 +386,9 @@ The sandboxed code could embrace this mechanism to recover from traps and to thr
 
 The \texttt{JNIEnv} data structure, which each native method receives as its first argument, is the main communication gateway between native code and the managed environment. But because its designers assumed that native code can bypass it any way, it completely lacks any form of protection against misbehaving code. With the native code sandboxed, a \texttt{JNIEnv}-like interface can be the only channel between the sandbox and the VM core, and protecting the core's integrity in the presence of untrusted code becomes worthwhile.
 
-This interface is implemented using the system object capability (\S\ref{sec:SystemObject}) which invokes a \texttt{JNIEnv} trampoline in the system domain. The calling convention again assumes that the first primitive argument is the operation code and the remaining registers are used for the actual parameters of the operation. Most of the operations retain the same semantics as their original counterparts, and will simply delegate the call to the corresponding \texttt{JNIEnv} function after the correctness of the arguments is verified. 
+This interface is implemented using the system object capability (\S\ref{sec:SystemObject}) which invokes a \texttt{JNIEnv} trampoline in the system domain. The calling convention again assumes that the first primitive argument is the operation code and the remaining registers are used for the actual parameters of the function. Most of the operations, called \emph{upcalls}, retain the same semantics as their original counterparts, and will simply delegate the call to the corresponding \texttt{JNIEnv} function after the correctness of the arguments is verified. 
 
-Legacy code compiled against \lib{qishr} is provided with a wrapper which automatically translates \texttt{JNIEnv} invocations to \insn{CCall}s into the host domain.
+Legacy code compiled against \lib{qishr} is provided with a wrapper which translates JNI upcalls to \insn{CCall}s into the host domain.
 
 \subsection{Native Handles}
 \label{sec:MemorySafety}
@@ -412,13 +412,16 @@ if (fid == NULL) { /* field not found */ }
 	\label{listing:SetFieldValue}
 \end{figure}
 
-In order to interact with the runtime class hierarchy and the internals of Java objects, native code must first request handlers to these elements, namely class objects, method identifiers and field identifiers, which it later uses in \texttt{JNIEnv} calls. Figure~\ref{listing:SetFieldValue} shows an example of such call, acquiring the handle to the \class{Point} class, its \keyword{public} field \texttt{x} and assigning it an integer value.
+The main purpose of \texttt{JNIEnv} is enabling the native code to interact with the class hierarchy and the internals and interface of objects in an efficient manner. To this end, native code can request three types of handlers: field identifiers, method identifiers and object references (include class references). Classes, fields and methods are typically requested by their name and JNI returns pointers to the corresponding internal data structures of the VM which makes subsequent upcalls fast. An example of assigning a value to a \keyword{public} field is shown in Figure~\ref{listing:SetFieldValue}. Note that native code is allowed to cache the identifiers but class references are normal object references which can be garbage collected between invocations (\S\ref{sec:LocalAndGlobalRefs}). 
 
 access control
 
 \subsection{Object References}
 
-\subsection{Garbage Collection}
+\subsubsection{Local and Global References}
+\label{sec:LocalAndGlobalRefs}
+
+\subsubsection{Garbage Collection}
 
 \subsection{Array Operations}
 
