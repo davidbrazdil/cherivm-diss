@@ -414,6 +414,10 @@ if (fid == NULL) { /* field not found */ }
 
 The main purpose of \texttt{JNIEnv} is enabling the native code to interact with the class hierarchy and the internals and interface of objects in an efficient manner. To this end, native code can request three types of handlers: field identifiers, method identifiers and object references (include class references). Classes, fields and methods are typically requested by their name and JNI returns pointers to the corresponding internal data structures of the VM which makes subsequent upcalls fast. An example of assigning a value to a \keyword{public} field is shown in Figure~\ref{listing:SetFieldValue}. Note that native code is allowed to cache the identifiers but class references are normal object references which can be garbage collected between invocations (\S\ref{sec:LocalAndGlobalRefs}). 
 
+The main problem with handles is, of course, that they can be forged. For instance, simple arithmetic on an existing object reference suffices to compute the handle of the following object on the heap. This can be prevented with sophisticated bookkeeping at the cost of performance, and indeed enterprise JVMs do that, but with CHERI there is another way. 
+
+Because sealed capabilities cannot be tampered with, only passed around, these truly opaque and unforgeable data structures are ideal for representing native handles. The unforgeability is given by the fact that the the \insn{CSealData} instruction copies the object type field from the sealing capability to the result. This field is a 64-bit pointer within the bounds of the sealing capability. Therefore, by setting this field to a location that the sandbox does not have acces to, the sandbox will not be able to generate the sealing capability and will not be able to forge the handles. Having multiple sealing capabilities also enables the sandbox to easily distinguish between different types of native handles.
+
 access control
 
 \subsection{Object References}
