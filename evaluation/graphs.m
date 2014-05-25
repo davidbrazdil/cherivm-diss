@@ -1,16 +1,23 @@
 Y =    [ 100.00  99.38  289.96          % get*Size
          100.00  87.82  156.89          % initIDs
          100.00 100.25  100.19          % generateKeys
-           4      5       6    ];
+         100.00   0.00  116.61          % static webpage
+         100.00   0.00  117.64          % file server
+       ];
        
 errY = [   6.94   6.58   32.12          % get*Size
           35.81  31.11   27.95          % initIDs
            7.17   3.91    3.92          % generateKeys
-           0.00   0.00    0.00 ];
+           9.33   0.00   10.18          % static webpage
+           1.85   0.00    2.26          % file server
+       ];
 
 xlab = { 'getPublicKeySize'
          'initIDs'
-         'generateKeys' };
+         'generateKeys' 
+         'static webpage'
+         'file server'
+       };
 
 ylab = 'running time diff / %';
 
@@ -27,4 +34,4 @@ legend(handle, lege);
 % add a horizontal line at 100%
 hold on
 xlim = get(gca, 'xlim');
-plot(xlim, [100 100])
+% plot(xlim, [100 100])
