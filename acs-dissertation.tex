@@ -235,11 +235,11 @@ The same principle is applied to instruction fetch from \reg{PC}, only it is ind
 
 \subsection{Object Capabilities}
 
-As mentioned before, object capabilities are formed by a pair of sealed capabilities. The object owner first creates an unsealed capability with \emph{seal} and \emph{execute} rights such that the capability's type is a pointer to the entry function relative to the region defined by the base and length, i.e. \texttt{base~+~type~=~\&function} and \texttt{type~<=~length}. Notice that only code which already has the rights to the memory containing the entry function can create this capability. 
+In order to create the pair of capabilities which form an object capability, the object owner first creates an unsealed capability with \emph{seal} and \emph{execute} rights such that the capability's type is a pointer to the entry function relative to the region defined by the base and length, i.e. \texttt{base~+~type~=~\&function} and \texttt{type~<=~length}. Notice that only code which already has the rights to the memory containing the entry function can create this capability. 
 
-The capability is then sealed with the \insn{CSealCode} instruction, becoming the code capability of the object, and is used once more in \insn{CSealData} to seal an arbitrary capability defining the address space of the object. Both components inherit the \emph{object type} field from the unsealed capability.
+The capability is then sealed with the \insn{CSealCode} instruction, becoming the code capability of the object, and is used once more in \insn{CSealData} to seal an arbitrary argument capability. Both components inherit the \emph{object type} field from the unsealed capability.
 
-When a valid object capability pair is passed to the \insn{CCall} instruction, the unsealed code capability becomes the new value of \reg{PCC}, its type is assigned to \reg{PC} and the unsealed data capability is stored in \reg{IDC} (\texttt{=\reg{C27}}). Typically, the entry function should begin by copying the capability from \reg{IDC} to \reg{C0} as \reg{C0} would have been cleared by the caller.
+When a valid object capability pair is passed to the \insn{CCall} instruction, the unsealed code capability becomes the new value of \reg{PCC}, its type is assigned to \reg{PC} and the unsealed data capability is stored in \reg{IDC} (\texttt{=\reg{C27}}). Typically, data capability is the object's memory region and the entry function begins with copying \reg{IDC} to \reg{C0}.
 
 Additionally, \insn{CCall} pushes the old values of \texttt{\reg{PC}~+~4}, \reg{SP}, \reg{PCC} and \reg{IDC} onto a trusted system stack, from which they are restored once the callee invokes \insn{CReturn}.
 
@@ -247,7 +247,7 @@ Additionally, \insn{CCall} pushes the old values of \texttt{\reg{PC}~+~4}, \reg{
 
 One of the prevailing limitations of the CHERI prototype is that the trusted thread stack capability is not thread-local and hence it is not safe to perform multiple object calls simultaneously. 
 
-For this reason, the host is currently forced to acquire a (reentrant) lock before it invokes an object capability. Multithreaded access to the sandbox is also not discussed in this dissertation and its implications on the protection mechanisms would require very careful and detailed consideration.
+For this reason, the host is currently forced to acquire a reentrant lock before it invokes an object capability. Multithreaded access to the sandbox is also not discussed in this dissertation and its implications on the protection mechanisms would require very careful and detailed consideration.
 
 \chapter{Related Work} 
 
