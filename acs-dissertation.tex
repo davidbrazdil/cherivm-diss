@@ -216,12 +216,12 @@ CHERI implements capabilities as 4-word (256-bit) data structures with the follo
 	\item[Base \& length] A pointer to the base of the memory region and its length; both 64-bit values.
 	\item[Permissions] 31-bit mask which describes the operations that may be performed with the capability.
 	\item[Unsealed bit] If this flag is set, the capability can be used in general-purpose capability operations.
-	\item[Object type] A 64-bit identificator to ensure that only corresponding data and code capabilities are used together.
+	\item[Object type] A 64-bit identificator to ensure that only corresponding code and data capabilities are used together.
 \end{description}
 
 Because these are too big to fit into standard registers, CHERI extends the register file with 28 general-purpose and five specialized capability registers, and defines their function in a new ABI convention. Extra caution is required when calling less trusted code because it may not conform to the convention. Specifically, the caller must explicitly clear all unused registers to avoid leaking rights and private data to the callee.
 
-Capabilities must be protected by the hardware in order to guarantee their integrity and unforgeability, yet at the same time it is highly desirable to allow capabilities to be stored together with normal data. To this end, each capability register has a tag which indicates whether it is holding a valid capability or not, and correspondingly the physical memory is required to associate a tag with every fourth word (capabilities in memory must be aligned accordingly). The instructions defined in the extended ISA are then the only ones allowed to set this tag as they are trusted to preserve the security properties, mainly that capability manipulation must never increase rights. Storing into memory with original MIPS instructions always clears the tag of the corresponding capability block. Invoking a capability instruction with an invalid argument traps.
+Capabilities must be protected by the hardware yet at the same time it is highly desirable to allow capabilities to be stored together with normal data. To this end, each capability register has a tag which indicates whether it is holding a valid capability or not, and correspondingly the physical memory is required to associate a tag with every fourth word (capabilities in memory must be aligned accordingly). The instructions defined in the extended ISA are then the only ones allowed to set this tag as they are trusted to preserve the security properties, mainly that capability manipulation must never increase rights. Storing into memory with original MIPS instructions always clears the tag of the corresponding capability block. Invoking a capability instruction with an invalid argument traps.
 
 \subsection{Pointer Indirection}
 
