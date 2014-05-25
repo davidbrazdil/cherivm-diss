@@ -136,9 +136,10 @@ Memory safety in Java is strongly connected to the principles of OOP. Code does 
 
 The assurances described above are the cornerstone of the Java security as they allow for isolation of individual software modules by enabling them to encapsulate their state. 
 
-Individual classes therefore become separate protection domains which only permit the modification of their inner state through a set of transactions exposed in their public interface. These methods become the only entry points into the respective protection domain and can be used by the object to control access to its state and to prevent operations which could leave the state inconsistent.
+Individual classes are separate protection domains which only permit the modification of their inner state through a set of transactions exposed in their public interface. These methods become the only entry points into the respective protection domain and can be used by the object to control access to its state and to prevent operations which could leave the state inconsistent.
 
-Limiting the scope of the code which can access the state also makes it possible to argue about the high-level security properties of an object class. As the authors of Joe-E [REF] point out, however, Java still contains language features which can prevent such reasoning and suggest building a more secure platform around its safe subset.
+% --- REMOVED ---
+% Limiting the scope of the code which can access the state also makes it possible to argue about the high-level security properties of an object class. As the authors of Joe-E [REF] point out, however, Java still contains language features which can prevent such reasoning and suggest building a more secure platform around its safe subset.
 
 \subsection{Java Sandbox Model}
 
