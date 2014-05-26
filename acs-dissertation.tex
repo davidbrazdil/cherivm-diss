@@ -446,9 +446,18 @@ Native code needs to remain aware of the number of references it has requested. 
 
 One by one, references can be deleted with \texttt{DeleteLocalRef}, \texttt{DeleteGlobalRef} and \texttt{DeleteGlobalWeakRef}. With local references, there is also an option of creating a new frame with \texttt{PushLocalFrame} and then deleting all the references in it with \texttt{PopLocalFrame}. Unfortunately, JNI specification is very vague about the semantics of these calls and it is unclear what should happen if native code attempts to delete a local reference present in one of the frames deeper in the stack.
 
-The implementation in JamVM is therefore very relaxed and code does not even have to be strictly malicious to break the Java stack where the information on active references is stored. Because the correctness of these lists is crucial for safe garbage collection, safety of these upcalls is checked by the trampoline.
-
 \subsubsection{Revoking References}
+
+The implementation in JamVM is therefore very relaxed and code does not even have to be strictly malicious to break the Java stack where the information on active references is stored. Because the correctness of these lists is crucial for safe garbage collection, safety of these upcalls is verified by the trampoline.
+
+\begin{figure}
+	\centering
+	\texttt{TODO: diagram of the indirection table}
+	\caption{Indirection table used for revoking object references}
+	\label{fig:IndirectionTable}
+\end{figure}
+
+Additionally, Qishr adopts an indirection scheme which enables it to revoke old references. Object references do not point directly to the object heap but rather to an entry in a reference counting hash table unique to each sandbox, depicted in Figure~\ref{fig:IndirectionTable}. Whenever a reference is passed to a sandbox, it is recorded in the JNI frame and its reference count incremented. The counters are decremented whenever a frame is destroyed (Qishr makes sure that all eventually are), or earlier if the sandbox selectively gives up its right to use a reference by deleting it. Any references pointing to a slot with a zero counter are considered invalid. Upcalls invoked with revoked references will fail and revoked return values will throw a Java exception.
 
 \subsubsection{Safe Garbage Collection}
 
