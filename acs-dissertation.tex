@@ -429,7 +429,7 @@ It was also experimented with an alternative approach where \lib{qishr} stored c
 
 Safe handles protect against arbitrary access to the address space, but they do not enforce the visibility rules between Java objects, which still allows native code to request handles of class members which it should not have access to. The reason why this is not part of the JNI specification is that native code can easily modify the Java stack and hence change the \emph{execution context}, i.e.\ the class it appears to be a member of. Since the Java stack is now also protected by the sandbox, the execution context information can be trusted and Qishr can enforce this policy at the \texttt{JNIEnv} trampoline. Native code still has the option of using reflection, just like managed code, but the difference is that the use of reflection can be forbidden by the security manager.
 
-This way, Qishr can guarantee the memore safety of native code towards Java objects and other internal data structures. Additionally, Qishr can assist as a debugging tool because any violation of these properties will be discovered either by the compiler or at runtime.
+This way, Qishr can guarantee the memory safety of native code towards Java objects and other internal data structures. Additionally, Qishr can assist as a debugging tool because any violation of these properties will be discovered either by the compiler or at runtime.
 
 \subsection{Memory Management}
 
