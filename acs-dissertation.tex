@@ -444,11 +444,11 @@ JNI distinguishes between three main types of references: local, global and weak
 
 Native code needs to remain aware of the number of references it has requested. For instance, if the method creates a large number of small intermediate objects and does not keep their references, they will not be deleted from the list maintained by the VM. For this reason, \texttt{JNIEnv} has several upcalls for signalling that a reference is no longer needed. 
 
-One by one, references can be deleted with \texttt{DeleteLocalRef}, \texttt{DeleteGlobalRef} and \texttt{DeleteGlobalWeakRef}. With local references, there is also an option of creating a new frame with \texttt{PushLocalFrame} and then deleting all the references in it with \texttt{PopLocalFrame}. Unfortunately, JNI specification is very vague about the semantics of these calls and it is unclear what should happen if native code attempts to delete a local reference present in one of the frames deeper in the stack.
+One by one, references can be deleted with \texttt{DeleteLocalRef}, \texttt{DeleteGlobalRef} and \texttt{DeleteGlobalWeakRef}. With local references, there is also an option of creating a new frame on the Java stack with \texttt{PushLocalFrame} and then deleting all the references in it with \texttt{PopLocalFrame}. Unfortunately, JNI specification is very vague about the semantics of these calls and it is unclear what should happen if native code attempts to delete a local reference present in one of the frames deeper in the stack.
 
 \subsubsection{Revoking References}
 
-The implementation in JamVM is therefore very relaxed and code does not even have to be strictly malicious to break the Java stack where the information on active references is stored. Because the correctness of these lists is crucial for safe garbage collection, safety of these upcalls is verified by the trampoline.
+The implementation in JamVM is therefore very relaxed and code does not even have to be strictly malicious to break the Java stack. Because the correctness of these lists is crucial for safe garbage collection, safety of these upcalls is verified by the trampoline.
 
 \begin{figure}
 	\centering
@@ -461,9 +461,9 @@ Additionally, Qishr adopts an indirection scheme which enables it to revoke old 
 
 \subsubsection{Safe Garbage Collection}
 
-
-
  and can be invoked by the VM at any point. The VM traverses the Java stack and recursively marks every object it encounters. This step is followed by a linear scan of the object heap and deallocation of unmarked objects. 
+
+compactation - no need to change the handle, only the pointer in the indirection table
 
 \subsection{Array Operations}
 
