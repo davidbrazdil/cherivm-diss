@@ -433,10 +433,18 @@ This way, Qishr can guarantee the memore safety of native code towards Java obje
 
 \subsection{Memory Management}
 
+Java is known as a language that automatically deallocates unreachable memory, a process famously called \emph{garbage collection}. JNI integrates native code into this scheme by keeping a list of references passed to it and offering it a way of informing the VM that some references are no longer needed. 
+
+But in this scenario, JNI has no assurance that native code will not attempt to use the object reference again later. If the object is garbage collected and the memory allocated to another one, the native code would therefore hold a valid reference to it.
+
 \subsubsection{Local and Global References}
 \label{sec:LocalAndGlobalRefs}
 
+
+
 \subsubsection{Garbage Collection}
+
+ and can be invoked by the VM at any point. The VM traverses the Java stack and recursively marks every object it encounters. This step is followed by a linear scan of the object heap and deallocation of unmarked objects. 
 
 \subsection{Array Operations}
 
