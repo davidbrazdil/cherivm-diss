@@ -457,9 +457,11 @@ The implementation in JamVM is therefore very relaxed and code does not even hav
 	\label{fig:IndirectionTable}
 \end{figure}
 
-Additionally, Qishr adopts an indirection scheme which enables it to revoke old references. Object references do not point directly to the object heap but rather to an entry in a reference counting hash table unique to each sandbox, depicted in Figure~\ref{fig:IndirectionTable}. Whenever a reference is passed to a sandbox, it is recorded in the JNI frame and its reference count incremented. The counters are decremented whenever a frame is destroyed (Qishr makes sure that all eventually are), or earlier if the sandbox selectively gives up its right to use a reference by deleting it. Any references pointing to a slot with a zero counter are considered invalid. Upcalls invoked with revoked references will fail and revoked return values will throw a Java exception.
+Additionally, Qishr adopts an indirection scheme which enables it to revoke old references. Object references do not point directly to the object heap but rather to an entry in a reference counting hash table unique to each sandbox, depicted in Figure~\ref{fig:IndirectionTable}. Whenever a reference is passed to a sandbox, it is recorded in the JNI frame and its reference count incremented. The counters are decremented whenever a frame is destroyed (Qishr makes sure that all eventually are), or earlier if the sandbox selectively gives up its right to use a reference by deleting it. Any references pointing to a slot with a zero counter are considered invalid. Upcalls invoked with revoked arguments will fail and revoked return values will throw a Java exception.
 
 \subsubsection{Safe Garbage Collection}
+
+
 
  and can be invoked by the VM at any point. The VM traverses the Java stack and recursively marks every object it encounters. This step is followed by a linear scan of the object heap and deallocation of unmarked objects. 
 
