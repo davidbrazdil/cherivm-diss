@@ -459,11 +459,27 @@ The implementation in JamVM is therefore very relaxed and code does not even hav
 
 Additionally, Qishr adopts an indirection scheme which enables it to revoke old references. Object references do not point directly to the object heap but rather to an entry in a reference counting hash table unique to each sandbox, depicted in Figure~\ref{fig:IndirectionTable}. Whenever a reference is passed to a sandbox, it is recorded in the JNI frame and its reference count incremented. The counters are decremented whenever a frame is destroyed (Qishr makes sure that all eventually are), or earlier if the sandbox selectively gives up its right to use a reference by deleting it. Any references pointing to a slot with a zero counter are considered invalid. Upcalls invoked with revoked arguments will fail and revoked return values will throw a Java exception.
 
-\subsubsection{Safe Garbage Collection}
+\subsubsection{Native Garbage Collection}
 
- and can be invoked by the VM at any point. The VM traverses the Java stack and recursively marks every object it encounters. This step is followed by a linear scan of the object heap and deallocation of unmarked objects. 
+The design is missing one last key component and that is the ability to reuse entries in the reference table. Right now, an entry of a revoked reference cannot be reallocated because the sandbox could still be holding on to that capability. To this end, Qishr extends the GC to scan the memory region of each sandbox and delete all revoked capabilities. Afterwards, revoked slots can be safely freed and reused.
 
-compactation - no need to change the handle, only the pointer in the indirection table
+In general, Java applications cannot make any assumptions about when the garbage collector will be invoked or how it will affect performance. Typically, the VM will run the GC if it fails to allocate memory for a new object on the Java heap. Some VMs, including JamVM, will then lock the entire world until the garbage collection finishes, but Dalvik, for example, is capable of running the GC in a background thread. 
+
+What does not change are the three stages of garbage collection. First, it traverses the Java stack and recursively marks every object it encounters. This is followed by a linear scan of the object heap (\emph{heap sweep}) and deallocation of unmarked objects. If the second step has not freed a fragment large enough for the new object, the GC will attempt again, this time also freeing weak references, and eventually will resort to heap compaction (a very expensive operation). Qishr modifies each one of those stages.
+
+JamVM marking is highly conservative as the GC cannot distinguish native handles from other data. When scanning the native stack of each thread, the marking step will search for values which could be pointers into the object heap. These are marked and recorded as potential \emph{roots}. With Qishr, the C stack of the VM is separate from the C stack of the sandbox, so JamVM will only find its own pointers.
+
+The heap sweep does not need to be changed at all, but Qishr extends it to scrub the memory of sandboxes. This process should be recursive so that all memory reachable from the sandbox is scrubbed, but currently the only memory the sandbox can write into are its own stack and heap. The garbage collector does a linear scan of every fourth word, checking if its capability tag is set. Capabilities which 
+\begin{inparaenum}[\itshape a\upshape)]
+\item are sealed,
+\item have type equal to object reference, and
+\item their reference count is zero,
+\end{inparaenum}
+will be invalidated by having their first byte overwritten. After the scan, all revoked slots in the reference table are freed.
+
+And lastly, the heap compaction updates the pointers in the indirection table once finished moving the objects. The sealed capabilities do not need to be updated at all as they do not point directly into the object heap.
+
+It should be noted that this makes the garbage collection of JamVM much more precise with respect to native code. In fact, the original marking algorithm can both miss a native handle -- when stored on the native heap -- and interpret random data as one. Respectively, the compaction then either does not update the handle or overwrites a value on the stack. The fact that Qishr indirects all the handles through the reference tables makes updating the pointers available to sandboxes trivial, but the GC can still misinterpret values on the VM's stack. Further research could focus on converting its object pointers to typed capabilities so as to avoid this confusion.
 
 \subsection{Array Operations}
 
