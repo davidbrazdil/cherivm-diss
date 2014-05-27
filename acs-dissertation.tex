@@ -515,9 +515,9 @@ translate, verify, type confusion
 
 \subsection{State Consistency}
 
-One of the recurring problems with the Native Interface is that the semantics of upcalls are rather ill-defined, especially in terms of their interference. For instance, \texttt{JNIEnv} provides upcalls for checking whether an exception has been raised (such exception will be thrown after the native method returns), clear the exception or raise a new one. These enable native code to integrate with the try/catch mechanism of the Java language, but it is unclear which operations should be allowed while there is an exception pending, e.g.\ whether other methods can be called, and similar questions emerge whilst dealing with arrays (\S\ref{ArraysCriticalSection}).
+One of the recurring problems with the Native Interface is that the semantics of upcalls are rather ill-defined, especially in terms of their interference. For instance, \texttt{JNIEnv} provides upcalls for checking whether an exception has been raised (such exception will be thrown after the native method returns), clearing the exception or raising a new one. These enable native code to integrate with the try/catch mechanism of the Java language, but it is unclear which operations should be allowed while there is an exception pending, e.g.\ whether other methods can be called, and similar questions emerge whilst dealing with arrays (\S\ref{ArraysCriticalSection}).
 
-The lack of detailed specification means that the semantics of these calls are likely to differ between JVMs and native code which runs fine on one could completely break another. Qishr currently does add some \emph{sanity} checks into the trampoline, but a more thorough investigation would be required to guarantee that a sequence of upcalls cannot leave the state of the VM inconsistent.
+The lack of detailed specification means that the semantics of these calls are likely to differ between JVMs and native code which runs fine on one could completely break another. Qishr currently does add some \emph{sanity checks} into the trampoline, but a more thorough investigation would be required to guarantee that a sequence of upcalls cannot leave the state of the VM inconsistent.
 
 \section{System Calls}
 
