@@ -564,6 +564,8 @@ The policy is enforced on a per-thread basis by associating each Java thread wit
 
 Qishr integrates native code into this mechanism simply by calling the same methods with JNI upcalls whenever appropriate. As an example, consider the UNIX \texttt{open} function. \texttt{open} takes two arguments (three in one special case): a C string with the file path and an integer with bit flags. The bottom two bits determine whether the sandbox requested the file to be opened for reading, writing or both. Accordingly, the trampoline will convert the file path to a Java string, get the object reference of the active security manager and invoke \texttt{checkRead} and/or \texttt{checkWrite} on it. It then checks if an exception has been thrown and if it has, catches it and returns \texttt{-1} with the \texttt{EPERM} error code in accordance with the POSIX specification.
 
+TODO: the table
+
 \subsection{File Descriptors}
 
 all Java domains - language safety, security policies
