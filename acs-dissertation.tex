@@ -23,7 +23,7 @@
 \def\wordcount{14,235}
 
 
-\usepackage{epsfig,graphicx,parskip,setspace,tabularx,xspace,url,listings,color,paralist}
+\usepackage{epsfig,graphicx,parskip,setspace,tabularx,xspace,url,listings,color,paralist,microtype}
 
 \newcommand{\reg}[1]{\texttt{\$#1}}
 \newcommand{\insn}[1]{\texttt{#1}}
@@ -521,6 +521,50 @@ One of the recurring problems with the Native Interface is that the semantics of
 The lack of detailed specification means that the semantics of these calls are likely to differ between JVMs and native code which runs fine on one could completely break another. Qishr currently does add some \emph{sanity checks} into the trampoline, but a more thorough investigation would be required to guarantee that a sequence of upcalls cannot leave the state of the VM inconsistent.
 
 \section{System Calls}
+
+The CheriBSD operating system currently allows system calls to be invoked only if the \reg{PCC} capability has the \texttt{CHERI\_PERM\_USER0} permission, otherwise a capability exception is raised and the sandbox killed. Removing this permission from the code capability of the sandbox object thus prevents it from invoking system calls itself and forcing it to use the Qishr trampoline where the active security policy can be enforced.
+
+TODO: libc\_cheri, libqishr
+
+\subsection{Security Manager}
+
+\begin{table}
+	\centering
+	\scriptsize
+	\tt
+	\begin{tabular}{|c|l|l|}
+		\hline
+		\normalfont\bfseries System Call	& \normalfont\bfseries Check Method	& \normalfont\bfseries Condition \\
+		\hline
+		accept						& checkAccept(String host, int port) 		& \\
+		access						& checkRead(String file)				& mode \& R\_OK  \\
+		access						& checkWrite(String file)				& mode \& W\_OK \\
+		connect						& checkConnect(String host, int port)		& \\
+		dlopen						& checkLink(String lib)				& \\
+		fopen						& checkRead(String file)				& mode \textnormal{contains} 'r' \\
+		fopen						& checkWrite(String file)				& mode \textnormal{contains} 'w' \textnormal{or} 'a' \\
+		exit							& checkExit(int status)				& \\
+		listen						& checkListen(int port)				& \\
+		open							& checkRead(String file)				& flags \& (O\_RDONLY | O\_RDWR) \\
+		open							& checkWrite(String file)				& flags \& (O\_WRONLY | O\_RDWR) \\
+		rename						& checkWrite(String file)				& \\
+		rmdir						& checkDelete(String file)				& \\
+		system						& checkExec(String cmd)				& \\
+		unlink						& checkDelete(String file)				& \\
+		\hline
+	\end{tabular}
+	\normalfont\normalsize
+	\caption{Example mapping of system calls to Java security policy checks.}
+	\label{table:SecurityChecks}
+\end{table}
+
+The active security policy is determined by the active security manager. The VM can either be invoked with a configuration file which the default manager parses, or a \class{Security\-Manager} object can be created programatically and activated before the Java sandbox is entered.
+
+The policy is enforced on a per-thread basis by associating each Java thread with a set of permissions. Before a protected operation is performed, the framework will retrieve the active security manager (also thread-local) with \texttt{System.{\allowbreak}getSecurityManager()} and if it is not \texttt{NULL}, it will call the \texttt{checkPermission} method with the appropriate permission object. Java provides many built-in permissions, but applications can create new ones simply by extending the \class{Permission} class. The \class{Security\-Manager} class defines wrapping methods for the most common checks, such as \texttt{checkRead} for the permission to read a given file or \texttt{checkConnect} for connecting to a given host and port. If the access is not granted, the security manager throws a \texttt{SecurityException}.
+
+Qishr integrates native code into this mechanism simply by calling the same methods with JNI upcalls whenever appropriate. As an example, consider the UNIX \texttt{open} function. \texttt{open} takes two arguments (three in one special case): a C string with the file path and an integer with bit flags. The bottom two bits determine whether the sandbox requested the file to be opened for reading, writing or both. Accordingly, the trampoline will convert the file path to a Java string, get the object reference of the active security manager and invoke \texttt{checkRead} and/or \texttt{checkWrite} on it. It then checks if an exception has been thrown and if it has, catches it and returns \texttt{-1} with the \texttt{EPERM} error code in accordance with the POSIX specification.
+
+\subsection{File Descriptors}
 
 all Java domains - language safety, security policies
 
