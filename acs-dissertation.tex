@@ -506,7 +506,7 @@ For now, Qishr disables the support for direct buffers. Because JVMs are not obl
 
 \subsubsection{Strings}
 
-Similar \texttt{Get/Release} upcalls also exist for operations with Java strings. The difference is that the \class{String} class is supposed to be immutable. JNI code must honour this and not change the contents of the underlying \class{char} array even if given direct access to it. Qishr again implements these upcalls with copying and hence guarantees that \class{String} instances always immutable.
+Similar \texttt{Get/Release} upcalls also exist for operations with Java strings. The difference is that the \class{String} class is supposed to be immutable. JNI code is supposed to honour this property and not change the contents of the underlying \class{char} array even if given direct access to it. Qishr again implements these upcalls with copying and hence guarantees that strings are always immutable.
 
 \subsection{Method Invocation}
 
