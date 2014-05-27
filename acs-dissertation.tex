@@ -351,11 +351,11 @@ The process of loading a native library is initiated by calling the \texttt{load
 \begin{figure}
 	\centering
 	\includegraphics[width=1.0\textwidth]{dia_address_layout.pdf}
-	\label{fig:addressSpaceLayout}
+	\label{fig:AddressSpaceLayout}
 	\caption{Address space layout of a sandbox instance from the point of view of the sandboxed code.}
 \end{figure}
 
-\lib{cheri} starts with reserving a memory region for the newly created sandbox, preparing the guest's address space layout as summarized in Figure~\ref{fig:addressSpaceLayout} and memory mapping the \emph{sandbox image} (library object file) into that region. 
+\lib{cheri} starts with reserving a memory region for the newly created sandbox, preparing the guest's address space layout as summarized in Figure~\ref{fig:AddressSpaceLayout} and memory mapping the \emph{sandbox image} (library object file) into that region. \label{sec:AddressSpaceLayout}
 
 If successful, it returns two object capabilities. One object represents the sandbox domain, with both the code and data component equal to the designated memory space and the entry point at \texttt{0x8000} as dictated by the CHERI ABI. \label{sec:SystemObject} The other is a system object which the sandbox can use to invoke a method inside the host domain. Its code component is the entire address space of the process, with an entry function inside \lib{cheri} which sets up the capability registers and hands over to a function selected by the host. In order to enable it to identify the domain it was invoked from, the data capability is set to the memory region of the sandbox. The entry function therefore does not set \reg{C0} from the data component but rather from the code capability of the object.
 
@@ -522,11 +522,17 @@ The lack of detailed specification means that the semantics of these calls are l
 
 \section{System Calls}
 
-The CheriBSD operating system currently allows system calls to be invoked only if the \reg{PCC} capability has the \texttt{CHERI\_PERM\_USER0} permission, otherwise a capability exception is raised and the sandbox killed. Removing this permission from the code capability of the sandbox object thus prevents it from invoking system calls itself and forcing it to use the Qishr trampoline where the active security policy can be enforced.
+The CheriBSD operating system currently allows system calls to be invoked only if the \reg{PCC} capability has the \texttt{CHERI\_PERM\_USER0} permission, otherwise a capability exception is raised and the sandbox is killed. Removing this permission from the code capability of the sandbox object thus prevents it from invoking system calls itself and forcing it to use the Qishr trampoline where the active security policy can be enforced.
 
-TODO: libc\_cheri, libqishr
+Code which should run in the sandbox therefore cannot be built against the standard \lib{c}. CHERI SDK provides its own subset (\lib{c\_cheri}) which contains many of the standard C functions that do not involve syscalls, such as operations on strings, \texttt{memcpy} or \texttt{memset}, a sandbox-aware implementation of \texttt{malloc} (reads heap limits from the read-only metadata in the address space; \S\ref{sec:AddressSpaceLayout}) and some glue for setting up the sandbox and invoking the system object. \lib{qishr} then implements the \lib{c} syscall functions (currently 25) as calls into the system domain trampoline, preserving the same semantics.
 
 \subsection{Security Manager}
+
+The active security policy is determined by the active security manager. The VM can either be invoked with a configuration file which the default manager parses, or a \class{Security\-Manager} object can be created programatically and activated before the Java sandbox is entered.
+
+The policy is enforced on a per-thread basis by associating each Java thread with a set of permissions. Before a protected operation is performed, the framework will retrieve the active security manager (also thread-local) with \texttt{System.{\allowbreak}getSecurityManager()} and if it is not \texttt{NULL}, it will call the \texttt{checkPermission} method with the appropriate permission object. Java provides many built-in permissions, but applications can create new ones simply by extending the \class{Permission} class. The \class{Security\-Manager} class defines wrapping methods for the most common checks, such as \texttt{checkRead} for the permission to read a given file or \texttt{checkConnect} for connecting to a given host and port. If the access is not granted, the security manager throws a \texttt{SecurityException}.
+
+Qishr's trampoline integrates native code into this mechanism simply by calling the same methods with JNI upcalls wherever appropriate. As an example, consider the \texttt{open} function. \texttt{open} takes two arguments: a C string with the file path and an integer with bit flags. The bottom two bits determine whether the sandbox requested the file to be opened for reading, writing or both. Accordingly, the trampoline will convert the file path to a Java string, get the object reference of the active security manager and invoke \texttt{checkRead} and/or \texttt{checkWrite} on it. It then checks if an exception has been thrown and if it has, catches it and returns \texttt{-1} with the \texttt{EPERM} error code in accordance with the POSIX specification.
 
 \begin{table}
 	\centering
@@ -558,13 +564,7 @@ TODO: libc\_cheri, libqishr
 	\label{table:SecurityChecks}
 \end{table}
 
-The active security policy is determined by the active security manager. The VM can either be invoked with a configuration file which the default manager parses, or a \class{Security\-Manager} object can be created programatically and activated before the Java sandbox is entered.
-
-The policy is enforced on a per-thread basis by associating each Java thread with a set of permissions. Before a protected operation is performed, the framework will retrieve the active security manager (also thread-local) with \texttt{System.{\allowbreak}getSecurityManager()} and if it is not \texttt{NULL}, it will call the \texttt{checkPermission} method with the appropriate permission object. Java provides many built-in permissions, but applications can create new ones simply by extending the \class{Permission} class. The \class{Security\-Manager} class defines wrapping methods for the most common checks, such as \texttt{checkRead} for the permission to read a given file or \texttt{checkConnect} for connecting to a given host and port. If the access is not granted, the security manager throws a \texttt{SecurityException}.
-
-Qishr integrates native code into this mechanism simply by calling the same methods with JNI upcalls whenever appropriate. As an example, consider the UNIX \texttt{open} function. \texttt{open} takes two arguments (three in one special case): a C string with the file path and an integer with bit flags. The bottom two bits determine whether the sandbox requested the file to be opened for reading, writing or both. Accordingly, the trampoline will convert the file path to a Java string, get the object reference of the active security manager and invoke \texttt{checkRead} and/or \texttt{checkWrite} on it. It then checks if an exception has been thrown and if it has, catches it and returns \texttt{-1} with the \texttt{EPERM} error code in accordance with the POSIX specification.
-
-TODO: the table
+Table~\ref{table:SecurityChecks} shows a non-exhaustive list of other system calls and the permission checks they should be mapped to. Only some of these were actually implemented in the proof-of-concept version of Qishr. For production release, all aspects of the syscalls' semantics would have to be carefully considered and new permissions potentially created for a more fine-grained control.
 
 \subsection{File Descriptors}
 
