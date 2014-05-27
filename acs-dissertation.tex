@@ -128,6 +128,7 @@ Additionally, the Java framework provides a large set of extensible security API
 
 The security of the Java platform is deeply rooted in the type, memory and control flow safety properties of its executable code. The language and the instruction set were crafted in a way that program bugs are likely to be caught by the compiler and pre-execution bytecode verifier, and other will raise exceptions at runtime. 
 
+\label{section:TypeConfusion}
 Java's type system is dynamic, although most types are actually checked statically for the sake of performance. Operations which are checked at runtime include array assignments, operations on generic classes and type casts. Unfortunately, the type inference algorithm has been shown to contain vulnerabilities~\cite{Suenaga:2012:JavaVulnerability} which make way to type confusion attacks~\cite{Oh:2012:JavaExploitReport} and these can subsequently be exploited to bypasss the security of the platform~\cite{McGraw:1999:SJG:298616}.
 
 Memory safety in Java is strongly connected to the principles of OOP. Code does not have direct access to the heap but rather has to adhere to a model of a memory space structured into object instances and their internal fields protected by the reference monitor, accessed through opaque references and automatically managed by the garbage collector. Together with the type system and explicit range checks, Java prevents common bugs, e.g.\ buffer overflow or dangling pointers, which can give the attacker access to an arbitrary part of the memory.
@@ -429,7 +430,11 @@ It was also experimented with an alternative approach where \lib{qishr} stored c
 
 Safe handles protect against arbitrary access to the address space, but they do not enforce the visibility rules between Java objects, which still allows native code to request handles of class members which it should not have access to. The reason why this is not part of the JNI specification is that native code can easily modify the Java stack and hence change the \emph{execution context}, i.e.\ the class it appears to be a member of. Since the Java stack is now also protected by the sandbox, the execution context information can be trusted and Qishr can enforce this policy at the \texttt{JNIEnv} trampoline. Native code still has the option of using reflection, just like managed code, but the difference is that the use of reflection can be forbidden by the security manager.
 
-This way, Qishr can guarantee the memory safety of native code towards Java objects and other internal data structures. Additionally, Qishr can assist as a debugging tool because any violation of these properties will be discovered either by the compiler or at runtime.
+\subsubsection{Type Safety}
+
+One other consequence of being forced to fully trust the native code is that, at least in JamVM, upcalls do not verify the types of their arguments which opens the way for type confusion attacks (\S\ref{section:TypeConfusion}). Qishr immediately prevents primitive types from being misinterpreted as object references by the virtue of using capabilities for the latter, and the trampoline calls the type checker for all necessary upcalls, e.g.\ field and array assignments and method invocations.
+
+With all of these mechanisms in place, Qishr can guarantee the memory safety of native code towards Java objects and other internal data structures. Additionally, Qishr can assist as a debugging tool because any violation of these properties will be discovered either by the compiler or at runtime.
 
 \subsection{Memory Management}
 
@@ -508,10 +513,6 @@ For now, Qishr disables the support for direct buffers. Because JVMs are not obl
 \subsubsection{Strings}
 
 Similar \texttt{Get/Release} upcalls also exist for operations with Java strings. The difference is that the \class{String} class is supposed to be immutable. JNI code is supposed to honour this property and not change the contents of the underlying \class{char} array even if given direct access to it. Qishr again implements these upcalls with copying and hence guarantees that strings are always immutable.
-
-\subsection{Method Invocation}
-
-translate, verify, type confusion
 
 \subsection{State Consistency}
 
