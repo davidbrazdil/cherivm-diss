@@ -576,9 +576,26 @@ Experiments were also carried out with file descriptors replaced with sealed cap
 
 \chapter{Evaluation} 
 
-% For any practical projects, you should almost certainly have some kind of evaluation, and it's often useful to separate this out into its own chapter. 
+A working prototype of Qishr was implemented as an extension to the JamVM embedded Java interpreter, comprising of circa 2,000 lines of C code and 200 lines of MIPS64 assembly. The \lib{qishr} compatiblity layer amounted to additional 1,800 lines of C and 100 lines of assembly. Further changes have been made to the build systems of JamVM and GNU Classpath in order to generate binaries compatible with the CHERI sandbox.
 
- comprised of XXX lines of C and XXX lines of MIPS assembly
+Porting took too long?
+
+\section{Trusted Code Base}
+
+
+
+\section{Performance}
+
+\subsection{Microbenchmarks}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{graph_matrix.png}
+	\caption{Performance overhead of Qishr.}
+\end{figure}
+
+
+\subsection{Web server}
 
 \begin{figure}
 	\centering
