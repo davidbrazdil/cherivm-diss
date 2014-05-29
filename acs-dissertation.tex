@@ -474,11 +474,11 @@ What does not change are the three stages of garbage collection. First, it trave
 
 JamVM marking is highly conservative as the GC cannot distinguish native handles from other data. When scanning the native stack of each thread, the marking step will search for values which could be pointers into the object heap. These are marked and recorded as potential \emph{roots}. With Qishr, the C stack of the VM is separate from the C stack of the sandbox, so JamVM will only find its own pointers.
 
-The heap sweep does not need to be changed at all, but Qishr extends it to scrub the memory of sandboxes. This process should be recursive so that all memory reachable from the sandbox is scrubbed, but currently the only memory the sandbox can write into are its own stack and heap. The garbage collector does a linear scan of every fourth word, checking if its capability tag is set. Capabilities which 
+The heap sweep does not need to be changed at all, but Qishr extends it to scrub the memory of sandboxes. This process should be recursive so that all memory reachable from the sandbox is scrubbed, but currently the only memory the sandbox can write into are its own image, stack and heap. The garbage collector does a linear scan of every fourth word, checking if its capability tag is set. Capabilities which 
 \begin{inparaenum}[\itshape a\upshape)]
 \item are sealed,
 \item have type equal to object reference, and
-\item their reference count is zero,
+\item their reference count is zero
 \end{inparaenum}
 will be invalidated by having their first byte overwritten. After the scan, all revoked slots in the reference table are freed.
 
