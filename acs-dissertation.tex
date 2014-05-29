@@ -590,7 +590,13 @@ Porting took too long?
 
 \begin{figure}
 	\centering
-	\includegraphics[width=\textwidth]{graph_matrix.png}
+	\includegraphics[width=1.1\textwidth]{graph_matrix.png}
+	\caption{Performance overhead of Qishr.}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=1.1\textwidth]{graph_access.png}
 	\caption{Performance overhead of Qishr.}
 \end{figure}
 
@@ -602,6 +608,20 @@ Porting took too long?
 	\includegraphics[width=\textwidth]{chart_overhead.eps}
 	\caption{Performance overhead of Qishr.}
 \end{figure}
+
+\begin{table}
+	\centering
+	\begin{tabular}{|l|c|c|c|}
+		\hline
+						& \bf JamVM JNI		& \bf Qishr JNI			& \bf Overhead \\
+		\hline
+		static webpage		& $(9.00 \pm 0.84)$ s	& $(10.50 \pm 0.92)$ s 	& $16.61\%$ \\
+		file server			& $(101.40 \pm 1.87)$ s	& $(119.28 \pm 2.29)$ s 	& $17.64\%$ \\
+		\hline
+	\end{tabular}
+	\caption{Overhead measurements for NanoHTTPd.}
+	\label{table:OverheadNanoHTTPd}
+\end{table}
 
 \chapter{Summary and Conclusions} 
 
