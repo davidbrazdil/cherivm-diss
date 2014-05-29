@@ -588,9 +588,7 @@ The additional security measurements inserted into JamVM naturally have an impac
 
 All experiments were executed with highest priority and Ethernet disabled (current driver keeps polling the device) but the results still suffered from high variation caused by frequent context switches. Time measurements were therefore sorted and the largest 10\% were removed as outliers. 
 
-\subsection{Microbenchmarks}
-
-\subsubsection{Wrapping Native Libraries}
+\subsection{Wrapping Native Libraries}
 
 One of the common use cases for the Java Native Interface is employing either more mature or better optimized third-party native libraries into a Java application. In such situations, JNI servers merely as a wrapper of the native code so it can be invoked from the Java environment.
 
@@ -631,7 +629,7 @@ The results are summarized in Table~\ref{table:OverheadSodium} and Figure~\ref{f
 
 And this trend only continues as the amount of work done by the native code increases. This is demonstrated by the last three operations which carry out extensive cryptographic computation. They all operate on several small buffers (up to five, each tens of bytes long), each requiring seven upcalls to determine their type and obtain a pointer to the backing buffer. With Qishr that means copying an array in and out of the sandbox. Yet these overheads are so marginal in comparison with the computation itself that the differences between the sandboxed and unsandboxed versions are well within one standard deviation. 
 
-\subsubsection{Optimizing Math}
+\subsection{Fast Arithmetic}
 
 Performance optimization can be a strong argument for including native code in Java applications but not all operations will benefit from a native implementation. Benchmarks carried out by Kurzyniec et al.~\ref{Kurzyniec01efficientcooperation} show that the enterprise-level JVMs, such as Oracle HotSpot, execute Java bytecode so efficiently that just the JNI invocation overhead itself can far exceed the achieved performance improvement. They conclude that in general, JNI can be used only for heavy computation requiring very little interaction with the VM, such as \lib{sodium} described above. 
 
@@ -658,7 +656,7 @@ At the moment, this is Qishr's Achilles heel. Even though the floating-point ari
 
 Together with the \lib{sodium} test case, these benchmarks show that Qishr does not stand in the way of mostly self-contained native code, but does become a burden once domains start sharing resources. Overcoming the issues with safe direct heap access therefore should be one of the priorities of future work.
 
-\subsubsection{Cost of Access Control}
+\subsection{Cost of Access Control}
 
 \begin{figure}[t]
 	\centering
@@ -677,19 +675,25 @@ Access control on Qishr is therefore not cheap, yet still within reasonable boun
 
 \subsection{Web Server}
 
+Previous benchmarks each focused on a different aspect of the overhead incurred by Qishr. NanoHTTPd\footnote{http://nanohttpd.com/}, a lightweight Java HTTP server, was selected for measurements on a larger, real-life application. Though NanoHTTPd does not ship with own native code, its execution inevitably makes extensive use of socket system calls implemented in the native portion of the framework. Running the framework in a sandbox therefore creates the same conditions as if it did.
+
 \begin{table}
 	\centering
 	\begin{tabular}{|l|c|c|c|}
 		\hline
-						& \bf JamVM JNI		& \bf Qishr JNI			& \bf Overhead \\
+						& \bf JamVM JNI		& \bf Qishr JNI			& \bf Difference \\
 		\hline
-		static webpage		& $ 9.00 \pm 0.84$ s	& $ 10.50 \pm 0.92$ s 	& $16.61\%$ \\
-		file server			& $ 101.40 \pm 1.87$ s	& $ 119.28 \pm 2.29$ s 	& $17.64\%$ \\
+		static webpage		& $ 9.00 \pm 0.84$ s	& $ 10.50 \pm 0.92$ s 	& $16.61 \pm 10.18$~$\%$ \\
+		file server			& $ 101.40 \pm 1.87$ s	& $ 119.28 \pm 2.29$ s 	& $17.64 \pm 2.26$~$\%$ \\
 		\hline
 	\end{tabular}
 	\caption{Overhead measurements for NanoHTTPd.}
 	\label{table:OverheadNanoHTTPd}
 \end{table}
+
+Two tests were carried out: hosting a small static webpage and downloading 1MB of random data. The client (\emph{curl}\footnote{http://curl.haxx.se/}) was running on another machine connected via Ethernet and first attempts, causing lazy class loading, were thrown away. The results, summarized in Table~\ref{table:OverheadNanoHTTPd}, show a reasonable overhead of roughly $10-20\%$ in both cases.
+
+The Java portion of the code runs equally fast on both JVMs and because access control is only applied when \texttt{listen} and \texttt{accept} are being invoked on a socket, it should have almost no impact on the overall performance once the connection is set up. The slowdown is located in the repeated calls to \texttt{write} which send chunks of data -- passed inside byte buffers -- over the socket, pointing again to array copying as the main source of the overhead.
 
 \section{Completeness}
 
