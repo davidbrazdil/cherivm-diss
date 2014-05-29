@@ -664,9 +664,16 @@ Together with the \lib{sodium} test case, these benchmarks show that Qishr does 
 	\centering
 	\includegraphics[width=1.1\textwidth]{graph_access.eps}
 	\caption{Performance overhead of Qishr.}
+	\label{fig:OverheadAccess}
 \end{figure}
 
-\lipsum[1]
+The other common use for native methods is gaining access to system calls beyond the capacity of the Java framework. Even though the performance does not tend to be an issue in such use cases, the overhead incurred by consulting the Security Manager was measured.
+
+The example application invokes a native method which determines whether a file can be opened in read-only mode with the POSIX \texttt{access} call. Before the method is called, the current Security Manager is set to \emph{null}, one which always allows the call and others which compare the file path against several prefixes. The program was executed in three different modes. The base time required to perform the system call was determined by running it under the unsandboxed JamVM, and the overhead of the downcalls and upcalls with a version of Qishr with access control disabled. And lastly, reenabling access control allows to approximate the overhead of the Security Manager itself. The overall execution times were subtracted and used to produce the breakdown in Figure~\ref{fig:OverheadAccess}.
+
+As expected, the base time and trampoline overhead remain constant, but the time taken to consult the Security Manager rises together with the complexity of the configured security policy. On average, the downcall/upcall management adds $66\%$. Without an active Security Manager, access control adds another $13\%$ which is very reasonable considering several Java methods are invoked in the process. However, if there is a Security Manager, Qishr creates a new Java string with the file path and invokes \texttt{checkRead}, already adding $48\%$ of the base time. 
+
+Access control on Qishr is therefore not cheap, yet still within reasonable bounds. Since the overhead depends on the time taken to run the Security Manager check (implemented in Java), it is very much determined by the complexity of the security policy but also by the speed of the interpreter. Qishr running on top of another VM could hence perform the policy checks much faster.
 
 \subsection{Web Server}
 

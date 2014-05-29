@@ -54,7 +54,7 @@ xlim = get(gca, 'xlim');
 % ACCESS CONTROL OVERHEAD
 
 Y =    [   1.70   1.05    0.23          % NULL
-           1.40   1.06    0.68          % Always grant
+           1.40   1.06    0.68          % Always allow
            1.71   1.02    0.92          % 1 comparison
            1.62   1.08    1.06          % 4 comparisons
            1.62   1.08    1.26          % 8 comparisons
@@ -67,13 +67,13 @@ xlab = { '16 comparisons'
          '8 comparisons' 
          '4 comparisons' 
          '1 comparison' 
-         'Always grant'
-         'NULL'
+         'Always allow'
+         'null'
        };
 
 ylab = 'invocation time / ms';
 
-lege = { 'JamVM' 'Qishr JNI overhead' 'Security Manager overhead' };
+lege = { 'Unsandboxed' 'Qishr overhead' 'Security Manager overhead' };
 
 hfig = figure;
 set(hfig, 'Position', [0 0 1024 576]);
