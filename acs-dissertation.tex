@@ -693,7 +693,7 @@ Previous benchmarks each focused on a different aspect of the overhead incurred 
 
 Two tests were carried out: hosting a small static webpage and downloading 1MB of random data. The client (\emph{curl}\footnote{http://curl.haxx.se/}) was running on another machine connected via Ethernet and first attempts, causing lazy class loading, were thrown away. The results, summarized in Table~\ref{table:OverheadNanoHTTPd}, show a reasonable overhead of roughly $10-20\%$ in both cases.
 
-The Java portion of the code runs equally fast on both JVMs and because access control is only applied when \texttt{listen} and \texttt{accept} are being invoked on a socket, it should have almost no impact on the overall performance once the connection is set up. The slowdown is located in the repeated calls to \texttt{write} which send chunks of data -- passed inside byte buffers -- over the socket, pointing again to array copying as the main source of the overhead.
+The Java portion of the code runs equally fast on both JVMs and because access control is only applied when \texttt{listen} and \texttt{accept} are being invoked on a socket, it should have almost no impact on the overall performance once the connection is set up. The slowdown is located in the repeated calls to \texttt{write} which sends chunks of data -- passed inside byte buffers -- over the socket, pointing again to array copying as the main source of the overhead.
 
 \section{Completeness}
 
