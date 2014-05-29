@@ -23,7 +23,7 @@
 \def\wordcount{14,235}
 
 
-\usepackage{epsfig,graphicx,parskip,setspace,tabularx,xspace,url,listings,color,paralist,microtype}
+\usepackage{epsfig,graphicx,parskip,setspace,tabularx,xspace,url,listings,color,paralist,microtype,lipsum}
 
 \newcommand{\reg}[1]{\texttt{\$#1}}
 \newcommand{\insn}[1]{\texttt{#1}}
@@ -576,38 +576,82 @@ Experiments were also carried out with file descriptors replaced with sealed cap
 
 \chapter{Evaluation} 
 
-A working prototype of Qishr was implemented as an extension to the JamVM embedded Java interpreter, comprising of circa 2,000 lines of C code and 200 lines of MIPS64 assembly. The \lib{qishr} compatiblity layer amounted to additional 1,800 lines of C and 100 lines of assembly. Further changes have been made to the build systems of JamVM and GNU Classpath in order to generate binaries compatible with the CHERI sandbox.
+A working prototype of Qishr was implemented as an extension to the JamVM embedded Java interpreter, comprising of circa 2,000 lines of C code and 200 lines of MIPS64 assembly. The \lib{qishr} compatibility layer amounted to additional 1,800 lines of C and 100 lines of assembly. Further changes have been made to the build systems of JamVM and GNU Classpath in order to generate binaries compatible with the CHERI sandbox.
 
 Porting took too long?
 
 \section{Trusted Code Base}
 
-
-
 \section{Performance}
+
+The additional security measurements inserted into JamVM naturally have an impact on its performance. The overhead imposed by Qishr was measured on a prototype of CHERI, running on an Altera DE4 FPGA development board at 100MHz. 
+
+All experiments were executed with highest priority and Ethernet disabled (current driver keeps polling the device) but the results still suffered from high variation caused by frequent context switches. Time measurements were therefore sorted and the largest 10\% were removed as outliers. 
 
 \subsection{Microbenchmarks}
 
-\begin{figure}
+\subsubsection{Wrapping Native Libraries}
+
+One of the common use cases for the Java Native Interface is employing either more mature or better optimized third-party native libraries into a Java application. In such situations, JNI servers merely as a wrapper of the native code so it can be invoked from the Java environment.
+
+This scenario was tested on Qishr with a wrapper for \lib{sodium}, a portable cryptographic library aiming to simplify data encryption with clean API and secure default values. A small JNI wrapper was written in 270 lines of C and 150 lines of Java, and compiled both as a shared library and a sandbox image. The native portion of the wrapper invokes \lib{sodium} functions with pointers to buffers provided by the Java side, checks the returned values and raises an exception if there was an error. The Java class queries the native library about the necessary buffer sizes, creates either array buffers or direct buffers (\S\ref{sec:DirectBuffers}) based on user configuration, and exposes a pure Java interface which can be used by other application components to generate RSA key pairs and encrypt/decrypt Java strings. 
+
+The testing program initializes the library, generates two key pairs, encrypts a fixed message with one and decrypts it with the other, timing the duration of each step. The experiment was conducted on an unmodified version of JamVM (once with direct buffers and once with array buffers) and on Qishr (array buffers only), each time with 150 repetitions.
+
+\begin{table}[t]
+	\centering
+	\footnotesize
+	\begin{tabular}{|c|c|c|c|}
+		\hline
+		\bf Test			& \bf JamVM (direct) & \bf JamVM (array) & \bf Qishr	\\
+		\hline
+		getPublicKeySize	& $78.92 \pm 5.48$ $\mu$s	& $78.43 \pm 5.19$ $\mu$s	& $228.83 \pm 25.35$ $\mu$s \\
+		initIDs			& $2.665 \pm 0.955$ ms		& $2.341 \pm 0.829$ ms		& $4.182 \pm 0.745$ ms \\
+		generateKeys		& $2.040 \pm 0.146$ s		& $2.045 \pm 0.079$ s		& $2.044 \pm 0.080$ s \\
+		encryptData		& $2.016 \pm 0.030$ s		& $2.020 \pm 0.027$ s		& $2.007 \pm 0.023$ s \\
+		decryptData		& $1.999 \pm 0.026$ s 		& $2.017 \pm 0.029$ s 		& $2.005 \pm 0.009$ s \\
+		\hline
+	\end{tabular}
+	\caption{Performance overhead of Qishr.}
+	\label{table:OverheadSodium}
+\end{table}
+
+\begin{figure}[t]
+	\centering
+	\includegraphics[width=1.1\textwidth]{graph_sodium.eps}
+	\caption{Performance overhead of Qishr.}
+	\label{fig:OverheadSodium}
+\end{figure}
+
+The results are summarized in Table~\ref{table:OverheadSodium} and Figure~\ref{fig:OverheadSodium}. Since JamVM supports pinning (gives direct access to array elements), there was no measurable difference between the two unsandboxed versions. 
+
+\texttt{getPublicKeySize} is a method which only returns a constant defined in the header of \lib{sodium} and it measures the overhead involved in invoking a native method. Regular JNI pops the Java stack and prepares the arguments in accordance with MIPS ABI. With Qishr, this also includes sealing object arguments, switching to the protection domain and setting up \lib{qishr}. That amounts to a small, \emph{roughly} constant $150 \mu$s ($190\%$ more than regular JNI) overhead with each downcall.
+
+\texttt{initIDs} is representative of methods which interact with the VM as its purpose is to request and cache field and method handles for future use. If no errors occur, \texttt{initIDs} requests two class references, one field ID, eight method IDs (11 upcalls in total) and immediately returns. The additional work now also comprises of sealing capabilities, verifying arguments, visibility checks and more domain transitions. However, the overhead, $57\%$, is less significant than in the first case because traversing the class hierarchy involves many string comparisons. 
+
+And this trend only continues as the amount of work done by the native code increases. This is demonstrated by the last three operations which carry out extensive cryptographic computation. They all operate on several small buffers (up to five, each tens of bytes long), each requiring seven upcalls to determine their type and obtain a pointer to the backing buffer. With Qishr that means copying an array in and out of the sandbox. Yet these overheads are so marginal in comparison with the computation itself that they are well within one standard deviation of the unsandboxed version. This makes Qishr highly suitable for safe execution of similar native libraries.
+
+\subsubsection{Optimizing Math}
+
+\begin{figure}[t]
 	\centering
 	\includegraphics[width=1.1\textwidth]{graph_matrix.eps}
 	\caption{Performance overhead of Qishr.}
 \end{figure}
 
-\begin{figure}
+\lipsum[1]
+
+\subsubsection{Cost of Access Control}
+
+\begin{figure}[t]
 	\centering
 	\includegraphics[width=1.1\textwidth]{graph_access.eps}
 	\caption{Performance overhead of Qishr.}
 \end{figure}
 
+\lipsum[1]
 
-\subsection{Web server}
-
-\begin{figure}
-	\centering
-	\includegraphics[width=1.1\textwidth]{graph_sodium.eps}
-	\caption{Performance overhead of Qishr.}
-\end{figure}
+\subsection{Web Server}
 
 \begin{table}
 	\centering
@@ -615,13 +659,33 @@ Porting took too long?
 		\hline
 						& \bf JamVM JNI		& \bf Qishr JNI			& \bf Overhead \\
 		\hline
-		static webpage		& $(9.00 \pm 0.84)$ s	& $(10.50 \pm 0.92)$ s 	& $16.61\%$ \\
-		file server			& $(101.40 \pm 1.87)$ s	& $(119.28 \pm 2.29)$ s 	& $17.64\%$ \\
+		static webpage		& $ 9.00 \pm 0.84$ s	& $ 10.50 \pm 0.92$ s 	& $16.61\%$ \\
+		file server			& $ 101.40 \pm 1.87$ s	& $ 119.28 \pm 2.29$ s 	& $17.64\%$ \\
 		\hline
 	\end{tabular}
 	\caption{Overhead measurements for NanoHTTPd.}
 	\label{table:OverheadNanoHTTPd}
 \end{table}
+
+\section{Completeness}
+
+\subsubsection{Direct Access Through Java References}
+
+\subsubsection{Interface Pointers}
+
+\subsubsection{Out-of-bounds Array Access}
+
+\subsubsection{Violating Access Control Rules}
+
+\subsubsection{Manual Memory Management}
+
+\subsubsection{Arguments of Wrong Classes}
+
+\subsubsection{Calling Wrong Methods}
+
+\subsubsection{Exception Handling}
+
+\subsubsection{Bypassing the Security Manager}
 
 \chapter{Summary and Conclusions} 
 
