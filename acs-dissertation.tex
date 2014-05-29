@@ -629,17 +629,34 @@ The results are summarized in Table~\ref{table:OverheadSodium} and Figure~\ref{f
 
 \texttt{initIDs} is representative of methods which interact with the VM as its purpose is to request and cache field and method handles for future use. If no errors occur, \texttt{initIDs} requests two class references, one field ID, eight method IDs (11 upcalls in total) and immediately returns. The additional work now also comprises of sealing capabilities, verifying arguments, visibility checks and more domain transitions. However, the overhead, $57\%$, is less significant than in the first case because traversing the class hierarchy involves many string comparisons. 
 
-And this trend only continues as the amount of work done by the native code increases. This is demonstrated by the last three operations which carry out extensive cryptographic computation. They all operate on several small buffers (up to five, each tens of bytes long), each requiring seven upcalls to determine their type and obtain a pointer to the backing buffer. With Qishr that means copying an array in and out of the sandbox. Yet these overheads are so marginal in comparison with the computation itself that the differences between the sandboxed and unsandboxed versions are well within one standard deviation. This makes Qishr highly suitable for safe execution of similar native libraries.
+And this trend only continues as the amount of work done by the native code increases. This is demonstrated by the last three operations which carry out extensive cryptographic computation. They all operate on several small buffers (up to five, each tens of bytes long), each requiring seven upcalls to determine their type and obtain a pointer to the backing buffer. With Qishr that means copying an array in and out of the sandbox. Yet these overheads are so marginal in comparison with the computation itself that the differences between the sandboxed and unsandboxed versions are well within one standard deviation. 
 
 \subsubsection{Optimizing Math}
 
-\begin{figure}[t]
+Performance optimization can be a strong argument for including native code in Java applications but not all operations will benefit from a native implementation. Benchmarks carried out by Kurzyniec et al.~\ref{Kurzyniec01efficientcooperation} show that the enterprise-level JVMs, such as Oracle HotSpot, execute Java bytecode so efficiently that just the JNI invocation overhead itself can far exceed the achieved performance improvement. They conclude that in general, JNI can be used only for heavy computation requiring very little interaction with the VM, such as \lib{sodium} described above. 
+
+\begin{figure}
 	\centering
 	\includegraphics[width=1.1\textwidth]{graph_matrix.eps}
 	\caption{Performance overhead of Qishr.}
+	\label{fig:OverheadMatrix}
 \end{figure}
 
-\lipsum[1]
+\begin{figure}
+	\centering
+	\includegraphics[width=1.2\textwidth]{graph_matrix_subtract.eps}
+	\caption{Performance overhead of Qishr.}
+	\label{fig:OverheadMatrixSubtract}
+\end{figure}
+
+
+The point when native code becomes faster is necessarily further for Qishr than it is for regular JNI. That, of course, depends on the nature of the operation, but one possible comparison was made by implementing the textbook $O(N^3)$ matrix-squaring algorithm in Java and C. The methods are given two float arrays, one for input and one for output. That way, they only need to access the individual elements of the array and do not, for example, have to allocate new memory. 
+
+Figure~\ref{fig:OverheadMatrix} visualizes the dependence of time taken by each implementation on the size of the matrix. Contrary to the results obtained by Kurzyniec, the overhead of JNI is very small when contrasted with the slow interpreter powering JamVM, and becomes faster as soon as $N=2$. The overhead of Qishr is much higher, outperforming the interpreter by $N = 4$, and this is caused partially by downcalls and upcalls taking longer but mainly by the fact that Qishr keeps copying the matrix in and out of the sandbox.
+
+At the moment, this is Qishr's Achilles heel. Even though the floating-point arithmetic of JamVM is abominably sluggish, the VM at least provides fast access to its arrays. Looking at the plot of the overhead of Qishr over regular JNI in Figure~\ref{fig:OverheadMatrixSubtract} it seems that the difference in their performance tends to somewhere near 110\%, i.e.\ Qishr taking twice as long to finish for sufficiently large matrices. 
+
+Together with the \lib{sodium} test case, these benchmarks show that Qishr does not stand in the way of mostly self-contained native code, but does become a burden once domains start sharing resources. Overcoming the issues with safe direct heap access therefore should be one of the priorities of future work.
 
 \subsubsection{Cost of Access Control}
 
