@@ -551,8 +551,8 @@ Qishr's trampoline integrates native code into this mechanism simply by calling 
 		fopen						& checkWrite(String file)				& mode \textnormal{contains} 'w' \textnormal{or} 'a' \\
 		exit							& checkExit(int status)				& \\
 		listen						& checkListen(int port)				& \\
-		open							& checkRead(String file)				& flags \& (O\_RDONLY | O\_RDWR) \\
-		open							& checkWrite(String file)				& flags \& (O\_WRONLY | O\_RDWR) \\
+		open							& checkRead(String file)				& flags \textnormal{contain} O\_RDONLY \textnormal{or} O\_RDWR \\
+		open							& checkWrite(String file)				& flags \textnormal{contain} O\_WRONLY \textnormal{or} O\_RDWR \\
 		rename						& checkWrite(String file)				& \\
 		rmdir						& checkDelete(String file)				& \\
 		system						& checkExec(String cmd)				& \\
