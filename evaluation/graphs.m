@@ -11,19 +11,15 @@ set(0,'DefaultAxesColorOrder',[0 153 153; 0 204 0; 255 0 0; 255 116 0] ./ 255);
 
 % MICROBENCHMARKS
 
-Y =    [ 289.96  % 100.00  99.38            % get*Size
-         156.89  % 100.00  87.82            % initIDs
-         100.19  % 100.00 100.25            % generateKeys
-         100.29  % 100.00 100.90            % encryptData
-          99.54  % 100.00 100.18            % decryptData
-       ];
+data = [ 78.94  5.50  78.45  5.21  229.3   27.9  
+          2.665 0.955  2.341 0.829   4.182  0.745
+          2.040 0.146  2.045 0.079   2.044  0.080
+          2.016 0.030  2.020 0.027   2.007  0.023
+          1.999 0.026  2.017 0.029   2.005  0.009 ];
+
+Y =    [ (data(:,1)./data(:,1)) (data(:,3)./data(:,1)) (data(:,5)./data(:,1)) ];
        
-errY = [  32.12  %  6.94   6.58             % get*Size
-          27.95  % 35.81  31.11             % initIDs
-           3.92  %  7.17   3.91             % generateKeys
-           0.44  %  1.29   1.44             % encryptData
-           1.29  %  1.47   1.32             % decryptData
-       ];
+errY = [ (data(:,2)./data(:,1)) (data(:,4)./data(:,1)) (data(:,6)./data(:,1)) ];
 
 xlab = { 'getPublicKeySize'
          'initIDs'
@@ -32,9 +28,9 @@ xlab = { 'getPublicKeySize'
          'decryptData'
        };
 
-ylab = 'running time diff / %';
+ylab = 'normalised running time';
 
-% lege = { 'JamVM' 'JamVM (w/o direct buffers)' 'Qishr' };
+lege = { 'JamVM (direct buffers)' 'JamVM (array buffers)' 'Qishr' };
 
 hfig = figure;
 set(hfig, 'Position', [0 0 1024 576]);
@@ -43,21 +39,15 @@ handle = barwitherr(errY, Y);
 grid on
 set(gca, 'XTickLabel', xlab, 'XTick', 1:numel(xlab))
 ylabel(ylab);
-% legend(handle, lege);
+legend(handle, lege);
 
 % add a horizontal line at 100%
 hold on
 xlim = get(gca, 'xlim');
-plot(xlim, [100 100])
+plot(xlim, [1 1])
 
 
 % ACCESS CONTROL OVERHEAD
-
-
-
-
-
-
 
 data1=       [ 1410481.3     424236.32
 1114138.6     286276.03
@@ -86,7 +76,7 @@ yrange = [6:-1:1];
 ylims = [0 5];
        
 xlab = { 'null'
-         'Always allow'
+         'always allow'
          '1 comparison' 
          '4 comparisons' 
          '8 comparisons' 
@@ -114,44 +104,61 @@ Y = [    12573600   19999590    89583520
          98105560   35092020   131222840
         223445990   41620980   161358930
         426942360   75217960   235046250
-        758072290  113915650   326598270
-       1078028040  157863730   444756020
-       1729112580  230473620   633423460
     ] .* (10^(-9));
-
-errY = [   21138      36513      462207
-           42027      10541      542089
-          516295     265726      664564
-          760899     160689      624300
-          759452     491690      762400
-         1568900     666282      710645
-          766451     662646      557524
-         5933980     774123      880832
-       ] .* (10^(-9));
 
 lege = { 'JamVM Java' 'JamVM JNI' 'Qishr JNI' };
 
 xlab = 'matrix size';
 ylab = 'time to square / s';
 
-xrange = 1:8;
-xlims = [1 8];
-ylims = [0 1];
+xrange = 1:5;
+ylims = [0 0.3];
 
 hfig = figure;
 set(hfig, 'Position', [0 0 1024 576]);
-colormap('summer');
 % errorbar(Y, errY);
-handle = plot(xrange, Y, 'LineWidth',2);
+handle = plot(xrange, Y, '-s', 'LineWidth',2);
 colormap('summer');
 legend(handle, lege);
 xlabel(xlab);
 ylabel(ylab);
 grid on;
-% axes1 = axes('Parent', hfig);
-% xlim(axes1, xlims);
 ylim(ylims);
 
+
+Y = [    15166990	19999590	89583520
+35146280	23040920	103769760
+95843100	35092020	131222840
+241684050	41620980	161358930
+438218170	75217960	235046250
+745042950	113915650	326598270
+1115822860	157863730	444756020
+1961589290	230473620	633423460
+2598817430	333173900	803589990
+3743307710	480370910	1079633400
+4998759430	553332300	1464536660
+6564814092	730140890	1801784243
+8398446341	990856710	2361305890
+10343707675	1199466450	2912003655
+12901486340	1504772020	3597323150
+15131459570	1981398899	4251831490
+18599465280	2285472840	5147065630
+21725832950	2726291510	6144054980
+25417560768	3221344880	7250951750
+30075594703	3766032690	8331240727 ] .* (10^(-9));
+
+xrange = 1:20;
+
+hfig = figure;
+set(hfig, 'Position', [0 0 1024 576]);
+colormap('summer');
+% errorbar(Y, errY);
+handle = plot(xrange, Y, '-s', 'LineWidth',2);
+colormap('summer');
+legend(handle, lege);
+xlabel(xlab);
+ylabel(ylab);
+grid on;
 
 
 
@@ -210,7 +217,7 @@ ylab = 'Qishr overhead / %';
 
 hfig = figure;
 set(hfig, 'Position', [0 0 1024 576]);
-handle = plot(xrange, Y, 'LineWidth',2);
+handle = plot(xrange, Y, '-s', 'LineWidth',2);
 hold on
 errorbar(xrange, Y, errY);
 xlabel(xlab);

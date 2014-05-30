@@ -583,7 +583,7 @@ Porting took too long?
 
 \section{Trusted Code Base}
 
-\section{Performance}
+\section{Case Studies}
 
 The additional security measurements inserted into JamVM naturally have an impact on its performance. The overhead imposed by Qishr was measured on a prototype of CHERI, running on an Altera DE4 FPGA development board at 100MHz. 
 
@@ -599,32 +599,32 @@ The testing program initializes the library, generates two key pairs, encrypts a
 
 \begin{table}[t]
 	\centering
-	\footnotesize
-	\begin{tabular}{|c|c|c|c|}
+	\scriptsize
+	\begin{tabular}{|c|c|c|c|c|}
 		\hline
-		\bf Test			& \bf JamVM (direct) & \bf JamVM (array) & \bf Qishr	\\
+		\bf Function		& \bf JamVM (direct) & \bf JamVM (array) & \bf Qishr	& \bf Difference \\
 		\hline
-		getPublicKeySize	& $78.92 \pm 5.48$ $\mu$s	& $78.43 \pm 5.19$ $\mu$s	& $228.83 \pm 25.35$ $\mu$s \\
-		initIDs			& $2.665 \pm 0.955$ ms		& $2.341 \pm 0.829$ ms		& $4.182 \pm 0.745$ ms \\
-		generateKeys		& $2.040 \pm 0.146$ s		& $2.045 \pm 0.079$ s		& $2.044 \pm 0.080$ s \\
-		encryptData		& $2.016 \pm 0.030$ s		& $2.020 \pm 0.027$ s		& $2.007 \pm 0.023$ s \\
-		decryptData		& $1.999 \pm 0.026$ s 		& $2.017 \pm 0.029$ s 		& $2.005 \pm 0.009$ s \\
+		getPublicKeySize	& $78.94 \pm 5.50$ $\mu$s	& $78.45 \pm 5.21$ $\mu$s	& $229.3 \pm 27.9$ $\mu$s & $190.5 \pm 2.9$ \% \\
+		initIDs			& $2.665 \pm 0.955$ ms		& $2.341 \pm 0.829$ ms		& $4.182 \pm 0.745$ ms & $56.89 \pm 6.49$ \% \\
+		generateKeys		& $2.040 \pm 0.146$ s		& $2.045 \pm 0.079$ s		& $2.044 \pm 0.080$ s & 0 \\
+		encryptData		& $2.016 \pm 0.030$ s		& $2.020 \pm 0.027$ s		& $2.007 \pm 0.023$ s & 0 \\
+		decryptData		& $1.999 \pm 0.026$ s 		& $2.017 \pm 0.029$ s 		& $2.005 \pm 0.009$ s & 0 \\
 		\hline
 	\end{tabular}
-	\caption{Performance overhead of Qishr.}
+	\caption{Average running time of native methods in the \lib{sodium} JNI wrapper. The Difference column compares Qishr against JamVM with direct buffers at 95\% confidence interval.}
 	\label{table:OverheadSodium}
 \end{table}
 
 \begin{figure}[t]
 	\centering
 	\includegraphics[width=1.1\textwidth]{graph_sodium.eps}
-	\caption{Performance overhead of Qishr.}
+	\caption{Normalised running time of native methods in the \lib{sodium} JNI wrapper. Errpr bars represent one standard deviation.}
 	\label{fig:OverheadSodium}
 \end{figure}
 
 The results are summarized in Table~\ref{table:OverheadSodium} and Figure~\ref{fig:OverheadSodium}. Since JamVM supports pinning (gives direct access to array elements), there was no measurable difference between the two unsandboxed versions. 
 
-\texttt{getPublicKeySize} is a method which only returns a constant defined in the header of \lib{sodium} and it measures the overhead involved in invoking a native method. Regular JNI pops the Java stack and prepares the arguments in accordance with MIPS ABI. With Qishr, this also includes sealing object arguments, switching to the protection domain and setting up \lib{qishr}. That amounts to a small, \emph{roughly} constant\footnote{depends on the number and type of arguments} $150 \mu$s ($190\%$ more than regular JNI) overhead with each downcall.
+\texttt{getPublicKeySize} is a method which only returns a constant defined in the header of \lib{sodium} and it measures the overhead involved in invoking a native method. Regular JNI pops the Java stack and prepares the arguments in accordance with MIPS ABI. With Qishr, this also includes sealing object arguments, switching to the protection domain and setting up \lib{qishr}. That amounts to a small, \emph{roughly} constant\footnote{Depends on the number and type of arguments but quickly becomes negligible.} $150 \mu$s ($190\%$ more than regular JNI) overhead with each downcall.
 
 \texttt{initIDs} is representative of methods which interact with the VM as its purpose is to request and cache field and method handles for future use. If no errors occur, \texttt{initIDs} requests two class references, one field ID, eight method IDs (11 upcalls in total) and immediately returns. The additional work now also comprises of sealing capabilities, verifying arguments, visibility checks and more domain transitions. However, the overhead, $57\%$, is less significant than in the first case because traversing the class hierarchy involves many string comparisons. 
 
@@ -639,6 +639,13 @@ Performance optimization can be a strong argument for including native code in J
 The point when native code becomes faster is necessarily further for Qishr than it is for regular JNI. That, of course, depends on the nature of the operation, but one possible comparison was made by implementing the textbook $O(N^3)$ matrix-squaring algorithm in Java and C. The methods are given two float arrays, one for input and one for output. That way, they only need to access the individual elements of the array and do not, for example, have to allocate new memory. 
 
 Figure~\ref{fig:OverheadMatrix} visualizes the dependence of time taken by each implementation on the size of the matrix. Contrary to the results obtained by Kurzyniec, the overhead of JNI is very small when contrasted with the slow interpreter powering JamVM, and becomes faster as soon as $N=2$. The overhead of Qishr is much higher, outperforming the interpreter by $N = 4$, and this is caused partially by downcalls and upcalls taking longer but mainly by the fact that Qishr keeps copying the matrix in and out of the sandbox.
+
+\begin{figure}
+	\centering
+	\includegraphics[width=1.1\textwidth]{graph_matrix_crossing.eps}
+	\caption{Performance overhead of Qishr.}
+	\label{fig:OverheadMatrix}
+\end{figure}
 
 \begin{figure}
 	\centering
@@ -667,6 +674,23 @@ Together with the \lib{sodium} test case, these benchmarks show that Qishr does 
 	\label{fig:OverheadAccess}
 \end{figure}
 
+\begin{table}
+	\centering
+	\scriptsize
+	\begin{tabular}{|c|c|c|c|c|}
+		\hline
+\bf Security policy	& \bf Unsandboxed	& \bf AC disabled 	& \bf AC enabled 	& \bf AC difference \\
+		\hline
+null 				& $1.59 \pm 0.60$ s	& $2.67 \pm 0.77$ s	& $2.93 \pm 0.78$s	& $9.7 \pm 3.8$ \% \\
+always allow		& $1.27 \pm 0.53$ s	& $2.39 \pm 0.71$ s	& $3.10 \pm 0.74$s	& $29.8 \pm 4.0$ \% \\
+1 comparison		& $1.58 \pm 0.66$ s	& $2.66 \pm 0.78$ s	& $3.62 \pm 0.73$s	& $36.1 \pm 3.7$ \% \\
+4 comparisons		& $1.48 \pm 0.58$ s	& $2.62 \pm 0.73$ s	& $3.71 \pm 0.71$s	& $41.7 \pm 3.6$ \% \\
+8 comparisons		& $1.48 \pm 0.58$ s	& $2.68 \pm 0.77$ s	& $3.92 \pm 0.70$s	& $50.3 \pm 3.7$ \% \\
+16 comparisons	& $1.50 \pm 0.57$ s	& $2.65 \pm 0.73$ s	& $4.13 \pm 0.65$s	& $55.6 \pm 3.4$ \% \\
+		\hline
+	\end{tabular}
+\end{table}
+
 The other common use for native methods is gaining access to system calls beyond the capacity of the Java framework. Even though the performance does not tend to be an issue in such use cases, the overhead incurred by consulting the Security Manager was measured.
 
 The example application invokes a native method which determines whether a file can be opened in read-only mode with the POSIX \texttt{access} call. Before the method is called, the current Security Manager is set to \emph{null}, one which always allows the call and others which compare the file path against several prefixes. The program was executed in three different modes. The base time required to perform the system call was determined by running it under the unsandboxed JamVM, and the overhead of the downcalls and upcalls with a version of Qishr with access control disabled. And lastly, reenabling access control allows to approximate the overhead of the Security Manager itself. The overall execution times were subtracted and used to produce the breakdown in Figure~\ref{fig:OverheadAccess}.
@@ -681,19 +705,20 @@ Previous benchmarks each focused on a different aspect of the overhead incurred 
 
 \begin{table}
 	\centering
+	\scriptsize
 	\begin{tabular}{|l|c|c|c|}
 		\hline
-						& \bf JamVM JNI		& \bf Qishr JNI			& \bf Difference \\
+		\bf Test			& \bf JamVM			& \bf Qishr			& \bf Difference \\
 		\hline
-		static webpage		& $ 9.00 \pm 0.84$ s	& $ 10.50 \pm 0.92$ s 	& $16.61 \pm 10.18$~$\%$ \\
-		file server			& $ 101.40 \pm 1.87$ s	& $ 119.28 \pm 2.29$ s 	& $17.64 \pm 2.26$~$\%$ \\
+		static webpage		& $8.9 \pm 0.7$ s		& $10.3 \pm 0.8$ s 		& $16.7 \pm 2.5$ \% \\
+		file server			& $101.0 \pm 1.4$ s		& $118.8 \pm 1.6$ s 	& $17.6 \pm 0.4$ \% \\
 		\hline
 	\end{tabular}
 	\caption{Overhead measurements for NanoHTTPd.}
 	\label{table:OverheadNanoHTTPd}
 \end{table}
 
-Two tests were carried out: hosting a small static webpage and downloading 1MB of random data. The client (\emph{curl}\footnote{http://curl.haxx.se/}) was running on another machine connected via Ethernet and first attempts, causing lazy class loading, were thrown away. The results, summarized in Table~\ref{table:OverheadNanoHTTPd}, show a reasonable overhead of roughly $10$-$20\%$ in both cases.
+Two tests were carried out: hosting a small static webpage and downloading 1MB of random data. The client (\emph{curl}\footnote{http://curl.haxx.se/}) was running on another machine connected via Ethernet and first attempts, causing lazy class loading, were thrown away. The results, summarized in Table~\ref{table:OverheadNanoHTTPd}, show a reasonable overhead of approximately $14$-$19\%$ in both cases.
 
 The Java portion of the code runs equally fast on both JVMs and because access control is only applied when \texttt{listen} and \texttt{accept} are being invoked on a socket, it should have almost no impact on the overall performance once the connection is set up. The slowdown is located in the repeated calls to \texttt{write} which sends chunks of data -- passed inside byte buffers -- over the socket, pointing again to array copying as the main source of the overhead.
 
@@ -734,7 +759,7 @@ Native code cannot perform potentially dangerous operations on its own. Its only
 \appendix
 \singlespacing
 
-\bibliographystyle{alpha} 
+\bibliographystyle{plain} 
 \bibliography{acs-dissertation} 
 
 \end{document}
