@@ -675,7 +675,7 @@ Access control on Qishr is therefore not cheap, yet still within reasonable boun
 
 \subsection{Web Server}
 
-Previous benchmarks each focused on a different aspect of the overhead incurred by Qishr. NanoHTTPd\footnote{http://nanohttpd.com/}, a lightweight Java HTTP server, was selected for measurements on a larger, real-life application. Though NanoHTTPd does not ship with own native code, its execution inevitably makes extensive use of socket system calls implemented in the native portion of the framework. Running the framework in a sandbox therefore creates the same conditions as if it did.
+Previous benchmarks each focused on a different aspect of the overhead incurred by Qishr. \emph{NanoHTTPd}\footnote{http://nanohttpd.com/}, a lightweight Java HTTP server, was selected for measurements on a larger, real-life application. Though \emph{NanoHTTPd} does not ship with own native code, its execution inevitably makes extensive use of socket system calls implemented in the native portion of the framework. Running the framework in a sandbox therefore creates the same conditions as if it did.
 
 \begin{table}
 	\centering
@@ -691,41 +691,43 @@ Previous benchmarks each focused on a different aspect of the overhead incurred 
 	\label{table:OverheadNanoHTTPd}
 \end{table}
 
-Two tests were carried out: hosting a small static webpage and downloading 1MB of random data. The client (\emph{curl}\footnote{http://curl.haxx.se/}) was running on another machine connected via Ethernet and first attempts, causing lazy class loading, were thrown away. The results, summarized in Table~\ref{table:OverheadNanoHTTPd}, show a reasonable overhead of roughly $10-20\%$ in both cases.
+Two tests were carried out: hosting a small static webpage and downloading 1MB of random data. The client (\emph{curl}\footnote{http://curl.haxx.se/}) was running on another machine connected via Ethernet and first attempts, causing lazy class loading, were thrown away. The results, summarized in Table~\ref{table:OverheadNanoHTTPd}, show a reasonable overhead of roughly $10$-$20\%$ in both cases.
 
 The Java portion of the code runs equally fast on both JVMs and because access control is only applied when \texttt{listen} and \texttt{accept} are being invoked on a socket, it should have almost no impact on the overall performance once the connection is set up. The slowdown is located in the repeated calls to \texttt{write} which sends chunks of data -- passed inside byte buffers -- over the socket, pointing again to array copying as the main source of the overhead.
 
-\section{Completeness}
+\chapter{Conclusion} 
 
-\subsubsection{Direct Access Through Java References}
+Tan et al.\ comprised a list of loopholes in JNI~\cite{Tan06safejava} and experimentally proved that these have the potential to crash at least some JVMs. This section discusses the implications of changes in Qishr on these loopholes.
 
-\subsubsection{Interface Pointers}
+\begin{description}
+\item{\bf Direct Access Through Java References} \\
+Object references are truly opaque and sandboxed code is not allowed access outside its memory space, preventing it from retrieving, modifying or corrupting the state of Java objects or the JVM.
 
-\subsubsection{Out-of-bounds Array Access}
+\item{\bf Interface Pointers} \\
+Individual sandboxes do not share the same instance of \texttt{JNIEnv} and therefore cannot compromise one another by rewriting entries in its function table. Instead, Qishr offers the same functionality with a system-domain trampoline and a \texttt{JNIEnv}-compatible wrapper for the client.
 
-\subsubsection{Violating Access Control Rules}
+\item{\bf Out-of-bounds Array Access} \\
+Array operations are not performed directly on the object heap but rather on their copies inside the framework later copied back by a trampoline function trusted to check the bounds. Any out-of-bounds access is therefore contained within the sandbox and cannot corrupt the data on the Java heap.
 
-\subsubsection{Manual Memory Management}
+\item{\bf Violating Access Control Rules} \\
+All field and method ID requests are approved by JamVM's visibility checker. Native code cannot change its execution context since the Java stack is outside the scope of the sandbox.
 
-\subsubsection{Arguments of Wrong Classes}
+\item{\bf Manual Memory Management} \\
+With regular JNI, native code must inform the JVM once it no longer needs array buffers requested with \texttt{Get\-<Type>\-Array\-Elements} functions (or similar ones), creating a C-like memory management with well known issues such as dangling pointers, multiple releases and memory leaks. Such functions are currently implemented at the compatibility layer using safe operations provided by the trampoline and their incorrect usage can only corrupt the memory of the sandbox. Nevertheless, this safety comes at the price of performance and devising a similar yet controlled interface is needed.
 
-\subsubsection{Calling Wrong Methods}
+\item{\bf Arguments of Wrong Classes} \\
+The trampoline verifies that all object arguments are valid references pointing to objects of the correct type as specified in the signature of the method or field, preventing typing bugs and type confusion attacks. This is possible because the class hierarchy is protected from the sandbox and hence the information can be trusted.
 
-\subsubsection{Exception Handling}
+\item{\bf Calling Wrong Methods} \\
+Similarly, attempts to access methods, fields and arrays with \texttt{JNIEnv} functions of the wrong type, e.g.\ accessing an \keyword{int} array with \texttt{Get\-Long\-Array\-Elements}, will throw an exception.
 
-\subsubsection{Bypassing the Security Manager}
+\item{\bf Exception Handling} \\
+At the moment, Qishr does not address the issues of possible state inconsistency in the presence of a pending exception.
 
-\chapter{Summary and Conclusions} 
+\item{\bf Bypassing the Security Manager}
+Native code cannot perform potentially dangerous operations on its own. Its only option is calling the system-domain methods defined in the trampoline which consult the active security manager. Untrusted JNI code is therefore fully integrated into the Java Sandbox.
 
-As you might imagine: summarizes the dissertation, and draws 
-any conclusions. Depending on the length of your work, and 
-how well you write, you may not need a summary here. 
-
-You will generally want to draw some conclusions, and point
-to potential future work. 
-
-
-
+\end{description}
 
 \appendix
 \singlespacing
