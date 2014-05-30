@@ -11,18 +11,18 @@ set(0,'DefaultAxesColorOrder',[0 153 153; 0 204 0; 255 0 0; 255 116 0] ./ 255);
 
 % MICROBENCHMARKS
 
-Y =    [ 100.00  99.38  289.96          % get*Size
-         100.00  87.82  156.89          % initIDs
-         100.00 100.25  100.19          % generateKeys
-         100.00 100.90  100.29          % encryptData
-         100.00 100.18   99.54          % decryptData
+Y =    [ 289.96  % 100.00  99.38            % get*Size
+         156.89  % 100.00  87.82            % initIDs
+         100.19  % 100.00 100.25            % generateKeys
+         100.29  % 100.00 100.90            % encryptData
+          99.54  % 100.00 100.18            % decryptData
        ];
        
-errY = [   6.94   6.58   32.12          % get*Size
-          35.81  31.11   27.95          % initIDs
-           7.17   3.91    3.92          % generateKeys
-           1.29   1.44    0.44          % encryptData
-           1.47   1.32    1.29          % decryptData
+errY = [  32.12  %  6.94   6.58             % get*Size
+          27.95  % 35.81  31.11             % initIDs
+           3.92  %  7.17   3.91             % generateKeys
+           0.44  %  1.29   1.44             % encryptData
+           1.29  %  1.47   1.32             % decryptData
        ];
 
 xlab = { 'getPublicKeySize'
@@ -34,7 +34,7 @@ xlab = { 'getPublicKeySize'
 
 ylab = 'running time diff / %';
 
-lege = { 'JamVM' 'JamVM (w/o direct buffers)' 'Qishr' };
+% lege = { 'JamVM' 'JamVM (w/o direct buffers)' 'Qishr' };
 
 hfig = figure;
 set(hfig, 'Position', [0 0 1024 576]);
@@ -43,45 +43,68 @@ handle = barwitherr(errY, Y);
 grid on
 set(gca, 'XTickLabel', xlab, 'XTick', 1:numel(xlab))
 ylabel(ylab);
-legend(handle, lege);
+% legend(handle, lege);
 
 % add a horizontal line at 100%
 hold on
 xlim = get(gca, 'xlim');
-% plot(xlim, [100 100])
+plot(xlim, [100 100])
 
 
 % ACCESS CONTROL OVERHEAD
 
-Y =    [   1.70   1.05    0.23          % NULL
-           1.40   1.06    0.68          % Always allow
-           1.71   1.02    0.92          % 1 comparison
-           1.62   1.08    1.06          % 4 comparisons
-           1.62   1.08    1.26          % 8 comparisons
-           1.63   1.11    1.43          % 16 comparisons
-       ];
+
+
+
+
+
+
+data1=       [ 1410481.3     424236.32
+1114138.6     286276.03
+1406415.1     462650.37
+1320612.8     369251.74
+1326079.3     378359.94
+1348473.7        399127 ];
+data2 =      [   2531886     690857.32
+2231398.1     595630.55
+2516387.4     717025.27
+2479752.6     648697.21
+2460003.6     681044.19
+2513757.6     656390.69 ];
+data3 =      [ 2791131.8     705229.34
+2964179.6     679478.89
+3506314.1     697521.17
+3606836.4     683634.19
+3820618.7      676469.7
+4033441.6     628581.24 ];
+
+Y = [ data1(:,1)     (data2(:,1)-data1(:,1))       (data3(:,1)-data2(:,1)) ] .* (10^(-6));
+errY = [ data1(:,2) data2(:,2) data3(:,2) ] .* (10^(-6));
+absY = [ data1(:,1) data2(:,1) data3(:,1) ] .* (10^(-6));
+           
 yrange = [6:-1:1];
 ylims = [0 5];
        
-xlab = { '16 comparisons' 
-         '8 comparisons' 
-         '4 comparisons' 
-         '1 comparison' 
+xlab = { 'null'
          'Always allow'
-         'null'
+         '1 comparison' 
+         '4 comparisons' 
+         '8 comparisons' 
+         '16 comparisons' 
        };
 
 ylab = 'invocation time / ms';
 
-lege = { 'Unsandboxed' 'Qishr overhead' 'Security Manager overhead' };
+lege = { 'Unsandboxed' 'Access control disabled' 'Access control enabled' };
 
 hfig = figure;
 set(hfig, 'Position', [0 0 1024 576]);
 colormap('summer');
-handle = barh(yrange, Y, 'stack');
+handle = hbarwitherr(errY, absY, absY);
 grid on
-set(gca, 'YTickLabel', xlab, 'XTick', 1:numel(xlab))
-xlabel(ylab);
+set(gca, 'XTickLabel', xlab, 'XTick', 1:numel(xlab))
+rotateXLabels(gca,0); 
+ylabel(ylab);
 legend(handle, lege);
 
 % MATRIX SQUARING
