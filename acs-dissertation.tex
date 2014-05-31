@@ -88,6 +88,8 @@ To the enterprise environment, where security tends to be prioritized, Java is a
 
 The rest of this dissertation describes Qishr, a prototype JVM extension which explores the potential of using capability-based mechanisms to protect the virtual machines's core from native libraries attached to it via the Java Native Interface (JNI) and their integration into the Java Security Architecture.
 
+[composability, heterogeneous environment]
+
 \section{Protection with Capabilities}
 
 Capability is a concept of a communicable token which entitles its holder to access a protected resource with a given set of access rights. Security of systems built around this abstraction then rests entirely on the ability to guarantee the unforgeability and integrity of the tokens.
@@ -284,11 +286,15 @@ The JVM's memory is fully protected and faults in the native code will crash onl
 
 Curiously, the same mechanism can be used in the opposite way as well. The Android operating system runs applications in separate processs and with different user IDs. This way, the native code resides in the same address space as the JVM, leaving it unprotected, but the OS can enforce an application-wide security policy -- given by the permissions of the user account -- that cannot be bypassed.
 
-\section{CCured (SafeJNI)}
+\section{Memory-safe Native Code}
 
-\lipsum[1]
+Another opportunity to increase the safety of heterogeneous programs opened up with tools that can ensure the memory safety of C, such as CCured~\cite{necula2002ccured, Condit:2003:CRW:781131.781157}, the Cyclone dialect~\cite{Jim:2002:CSD:647057.713871} or Janet~\cite{Bubak:2001:CJN:1239921.1239925}, a language extension for writing Java and C in one file. CCured, in particular, analyzes C source code to identify potential safety violations and adds runtime checks if safety cannot be fully determined statically. During execution, CCured associates a list of attributes with each pointer, such as permissions or the length of the buffer (\emph{fat pointers}) and dynamically prevents unsafe operations. 
 
-\section{SFI (Robusta)}
+CCured does vastly improve reliability of C but remains oblivious to the correct semantics of JNI-enabled source code. To this end, the SafeJNI project~\cite{Tan06safejava} extends CCured with new pointer types that model Java references or facilitate safe access to the object heap, and adds new runtime checks which ensure JVM state consistency and enforce class member visibility rules. Overhead of this solution is typically about 60\%.
+
+The main shortcoming of SafeJNI is that in fact it is not a security tool and the reasons are three-fold. First and foremost, the JVM has no way of verifying whether an untrusted piece of code was compiled with SafeJNI and therefore cannot trust its claims about memory safety. Secondly, SafeJNI only prevents memory to be accesses through the opaque references, but does not stop normal pointer arithmetic. Since the JVM and the native code share their address space, truly malicious code could still temper with the state of the virtual machine. And lastly, SafeJNI does not enforce the security policy upon system calls, thus allowing it to escape the Java sandbox.
+
+\section{Software-fault Isolation}
 
 \lipsum[1]
 
