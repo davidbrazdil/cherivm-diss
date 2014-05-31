@@ -252,39 +252,49 @@ For this reason, the host is currently forced to acquire a lock before it invoke
 
 \chapter{Related Work} 
 
-This chapter covers relevant (and typically, recent) research 
-which you build upon (or improve upon). There are two complementary 
-goals for this chapter: 
-\begin{enumerate} 
-  \item to show that you know and understand the state of the art; and 
-  \item to put your work in context
-\end{enumerate} 
+% This chapter covers relevant (and typically, recent) research 
+% which you build upon (or improve upon). There are two complementary 
+% goals for this chapter: 
+% \begin{enumerate} 
+%   \item to show that you know and understand the state of the art; and 
+%   \item to put your work in context
+% \end{enumerate} 
+% 
+% Ideally you can tackle both together by providing a critique of
+% related work, and describing what is insufficient (and how you do
+% better!)
+% 
+% The related work chapter should usually come either near the front or
+% near the back of the dissertation. The advantage of the former is that
+% you get to build the argument for why your work is important before
+% presenting your solution(s) in later chapters; the advantage of the
+% latter is that don't have to forward reference to your solution too
+% much. The correct choice will depend on what you're writing up, and
+% your own personal preference.
 
-Ideally you can tackle both together by providing a critique of
-related work, and describing what is insufficient (and how you do
-better!)
-
-The related work chapter should usually come either near the front or
-near the back of the dissertation. The advantage of the former is that
-you get to build the argument for why your work is important before
-presenting your solution(s) in later chapters; the advantage of the
-latter is that don't have to forward reference to your solution too
-much. The correct choice will depend on what you're writing up, and
-your own personal preference.
-
-\section{Joe-E}
-
-\section{Dalvik}
-
-sandbox by linux uid
+Research aiming to isolate untrusted native code from a trusted environment has a long and rich history. Many techniques have been devised, some modifying only the software stack and other relying on support from the hardware layer, each bearing completely different characteristics. This chapter gives a brief introduction of some of these and refers to attempts to employ them as Java protection mechanisms.
 
 \section{Process-based Isolation}
 
+Virtual memory, a method for memory management transparent to the running program, has been an integral part of almost all computer architectures for decades. It also soon became the basis of the first truly wide-spread isolation technique once operating systems started executing instances of programs in processes with their own virtual address spaces and privilege sets. This is an effective form of code isolation, but it is also coarse-grained and its context switches expensive by today's standards, associated with the limitations of the TLB~\cite{basu2012reducing}. 
+
+Being widely adopted, it was also one of the first techniques to be applied in the context of JNI. Czajkowsi et al.~\cite{989483} developed a wrapper of JNI-compatible libraries that moves the actual native code into a separate process which then communicates with the JVM using inter-process communication (IPC). This makes for a highly portable design independent of the particular JVM implementation, but also brings about a significant performance penalty, reaching almost 900\% for applications which often invoke native methods.
+
+The JVM's memory is fully protected and faults in the native code will crash only its process. Contrary to other attempts, one of the authors' concerns was the possible interference between system calls invoked by the JVM and the native library. Because the separate process has independent memory management and state, interference ceizes to be an issue, yet simultaneously makes it impossible to enforce the Java security policy.
+
+Curiously, the same mechanism can be used in the opposite way as well. The Android operating system runs applications in separate processs and with different user IDs. This way, the native code resides in the same address space as the JVM, leaving it unprotected, but the OS can enforce an application-wide security policy -- given by the permissions of the user account -- that cannot be bypassed.
+
 \section{CCured (SafeJNI)}
+
+\lipsum[1]
 
 \section{SFI (Robusta)}
 
-doesn't support dynamic loading (and by design cannot)
+\lipsum[1]
+
+\section{NestedVM}
+
+\lipsum[1]
 
 \section{Similar Systems}
 
