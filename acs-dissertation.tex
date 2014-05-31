@@ -294,20 +294,13 @@ CCured does vastly improve reliability of C but remains oblivious to the correct
 
 The main shortcoming of SafeJNI is that in fact it is not a security tool and the reasons are three-fold. First and foremost, the JVM has no way of verifying whether an untrusted piece of code was compiled with SafeJNI and therefore cannot trust its claims about memory safety. Secondly, SafeJNI only prevents memory to be accesses through the opaque references, but does not stop normal pointer arithmetic. Since the JVM and the native code share their address space, truly malicious code could still temper with the state of the virtual machine. And lastly, SafeJNI does not enforce the security policy upon system calls, thus allowing it to escape the Java sandbox.
 
-\section{Software-fault Isolation}
+\section{Software-based Fault Isolation}
 
-\lipsum[1]
+The inception of Software-based Fault Isolation (SFI)~\cite{Wahbe:1993:ESF:168619.168635} brought about a very promising technique for code isolation but only the latest development in efficient SFI implementation on CISC platforms~\cite{McCamant:2006:ESC:1267336.1267351} turned it into a truly ubiquitous sandboxing mechanism. The principle of SFI is similar to CCured in that native code is instrumented with dynamic checks, but differs in their purpose. Rather than making C memory safe, SFI ensures that the native code does not invoke privileged instructions and that it is confined to a part of the address space designated to it, with the only exception of jumping into a trampoline in the host domain. SFI tools, like Java, come with a small, sometimes formally-proven verifier~\cite{Morrisett:2012:RBF:2254064.2254111} which checks that the code has been correctly instrumented before it is allowed to execute.
 
-\section{NestedVM}
+The state-of-the-art implementation of SFI is Google Native Client (NaCl)~\cite{5207638} which was written for the Chrome web browser in order to execute native plugins, has been ported from x86 to ARM and MIPS, and is the substrate of several sandboxing products. One of these is Robusta~\cite{siefers2010robusta} which utilizes NaCl to solve the JNI safety problem. 
 
-\lipsum[1]
-
-\section{Similar Systems}
-
-\subsection{Joe-E}
-\subsection{CORBA}
-\subsection{Capsicum}
-
+Robusta therefore does not guarantee memory safety of the native code but does protect the Java environment from its effects by the virtue of moving it into an isolated address space. Robusta also mediates all interaction between the sandbox and the JVM, verifying the arguments, and consults the security manager before controlled system calls are issued, reusing the security policy architecture. The reported overhead is somewhere between 2-10\% for \emph{zlib} compression, but direct comparison with SafeJNI is difficult because different JVMs were used, as will be explained later (\S\ref{sec:OverheadZlib}).
 
 \chapter{Design and Implementation} 
 
@@ -739,6 +732,9 @@ Previous benchmarks each focused on a different aspect of the overhead incurred 
 Two tests were carried out: hosting a small static webpage and downloading 1MB of random data. The client (\emph{curl}\footnote{http://curl.haxx.se/}) was running on another machine connected via Ethernet and first attempts, causing lazy class loading, were thrown away. The results, summarized in Table~\ref{table:OverheadNanoHTTPd}, show a reasonable overhead of approximately $14$-$19\%$ in both cases.
 
 The Java portion of the code runs equally fast on both JVMs and because access control is only applied when \texttt{listen} and \texttt{accept} are being invoked on a socket, it should have almost no impact on the overall performance once the connection is set up. The slowdown is located in the repeated calls to \texttt{write} which sends chunks of data -- passed inside byte buffers -- over the socket, pointing again to array copying as the main source of the overhead.
+
+\subsection{Zlib}
+\label{sec:OverheadZlib}
 
 \section{Summary}
 
