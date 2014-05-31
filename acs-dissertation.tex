@@ -23,7 +23,7 @@
 \def\wordcount{14,235}
 
 
-\usepackage{epsfig,graphicx,parskip,setspace,tabularx,xspace,url,listings,color,paralist,microtype,lipsum,afterpage}
+\usepackage{epsfig,graphicx,parskip,setspace,tabularx,xspace,url,listings,color,paralist,microtype,lipsum,afterpage,subcaption}
 
 \newcommand{\reg}[1]{\texttt{\$#1}}
 \newcommand{\insn}[1]{\texttt{#1}}
@@ -592,6 +592,54 @@ Porting took too long?
 
 \section{Trusted Computing Base}
 
+\begin{table}
+	\centering
+	\begin{subfigure}[b]{0.45\textwidth}
+		\centering
+		\footnotesize
+		\begin{tabular}{|l|r|}
+		\hline
+		\bf Library		& \bf Size		\\
+		\hline
+		java-io		& 1,024				\\
+		java-lang		& 916				\\
+		java-net		& 2,952				\\
+		java-nio		& 2,852				\\
+		java-util		& 126				\\
+		native-lib		& 1,341				\\
+		classpath		& 395				\\
+		libiconv		& 3,201				\\
+		libmagic		& 8,928				\\
+		\hline
+		\bf Total		& 21,735				\\
+		\hline
+		\end{tabular}
+		\caption{Measured by cloc (only actual lines with code). }
+	\end{subfigure}
+	\begin{subfigure}[b]{0.45\textwidth}
+		\centering
+		\footnotesize
+		\begin{tabular}{|c|c|}
+		\hline
+		\bf Library		& \bf Size (lines of C)		\\
+		\hline
+		java-io		& 1024				\\
+		java-lang		& 916				\\
+		java-net		& 2952				\\
+		java-nio		& 2852				\\
+		java-util		& 126				\\
+		native-lib		& 1341				\\
+		classpath		& 395				\\
+		libiconv		& 3201				\\
+		libmagic		& 8928				\\
+		\hline
+		\bf Total		& 21735				\\
+		\hline
+		\end{tabular}
+		\caption{Measured by cloc (only actual lines with code). }
+	\end{subfigure}
+\end{table}
+
 \section{Case Studies}
 
 The additional security measurements inserted into JamVM naturally have an impact on its performance. The overhead imposed by Qishr was measured on a prototype of CHERI, running on an Altera DE4 FPGA development board at 100MHz. 
@@ -659,14 +707,14 @@ Figures~\ref{fig:OverheadMatrixCrossing} and~\ref{fig:OverheadMatrix} illustrate
 \begin{figure}
 	\centering
 	\includegraphics[width=1.1\textwidth]{graph_matrix.eps}
-	\caption{Performance overhead of Qishr.}
+	\caption{Performance of a matrix squaring algorithm in pure Java, JNI and Qishr. Overall shape remains the same, only their parameters change.}
 	\label{fig:OverheadMatrix}
 \end{figure}
 
 \begin{figure}
 	\centering
 	\includegraphics[width=1.1\textwidth]{graph_matrix_subtract.eps}
-	\caption{Performance overhead of Qishr.}
+	\caption{Overhead of Qishr over regular JNI during matrix squaring as a function of the matrix size. Some factors eventually diminish but the overhead of array copying depends on the size of the input.}
 	\label{fig:OverheadMatrixSubtract}
 \end{figure}
 
