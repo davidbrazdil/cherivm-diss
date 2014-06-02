@@ -86,9 +86,7 @@ According to reports from August 2013, approximately 20\% of the most popular ap
 
 To the enterprise environment, where security tends to be prioritized, Java is a platform capable of executing untrusted applications inside a safe environment that limits its access to system resources, and even running multiple such applications side-by-side. But the inability to constrain native code in the same manner dictates that only applications written eclusively for the Java Virtual Machine (JVM) can forced to comply with the chosen security policy.
 
-The rest of this dissertation describes Qishr, a prototype JVM extension which explores the potential of using capability-based mechanisms to protect the virtual machines's core from native libraries attached to it via the Java Native Interface (JNI) and their integration into the Java Security Architecture.
-
-[composability, heterogeneous environment]
+This dissertation describes Qishr, a prototype JVM extension which explores the potential of using capability-based mechanisms to protect the virtual machines's core from native libraries attached to it via the Java Native Interface (JNI) and their integration into the Java Security Architecture.
 
 \section{Protection with Capabilities}
 
@@ -98,9 +96,10 @@ If implemented efficiently, capabilities are a lightweight access control mechan
 
 Most systems implement capabilities in some form, UNIX and its file descriptors are an example of one, but their design is typically not flexible enough to facilitate small-scale software decomposition. Qishr was built for the Capability Hardware Enhanced RISC Instructions (CHERI) platform, an ongoing University of Cambridge research into extending the comodity 64-bit MIPS Instruction Set Architecture (ISA) to support the \emph{object-capability model} directly in hardware. That makes CHERI capabilities not only fast but also highly trustworthy because they are protected on the lowest possible level of the system.
 
-Qishr uses capability compartmentalization to execute untrusted JNI libraries inside a safe sandbox within the JVM process. The native code is given access to a small region of the virtual address space which it can use freely, but its access to system resources and other parts of the address space is controlled. Legacy code can be built against a library which provides a compatibility layer for the standard JNI interface and \lib{c} functions.
+Capability compartmentalization is utilized by Qishr to execute untrusted JNI libraries inside a safe sandbox within the JVM process. The native code is given access to a small region of the virtual address space which it can use freely, but its access to system resources and other parts of the address space is controlled. Legacy code can be built against a library which provides a compatibility layer for the standard JNI interface and \lib{c} functions.
 
-Qishr does not guarantee safety of the code inside the sandbox but it does protect the Java runtime from its effects and enforces the same security policy as the Java interpreter. Its proof-of-concept implementation integrates Qishr into JamVM but the design is highly portable to other Java VMs. [MORE]
+Qishr does not guarantee safety of the native code inside a sandbox but it does protect the Java runtime from its effects and closes some of the exploitable JNI loopholes, including the problem of dangling references not addressed in previous work. Furthermore, sandboxed code is subject to the same security policy as the Java interpreter
+ with a modest overhead of approximately 15\%. Its proof-of-concept implementation integrates Qishr into the JamVM but could be ported to other Java virtual machines as well. 
 
 \chapter{Background} 
 
@@ -778,7 +777,7 @@ The other common use for native methods is gaining access to system calls beyond
 
 The example application invokes a native method which determines whether a file can be opened in read-only mode with the POSIX \texttt{access} call. Before the method is called, the current Security Manager is set to \emph{null}, one which always allows the call and others which compare the file path against several prefixes. The program was executed in three different modes. The base time required to perform the system call was determined by running it under the unsandboxed JamVM, and the overhead of the downcalls and upcalls with a version of Qishr with access control disabled. And lastly, reenabling access control allows to approximate the overhead of the Security Manager itself. The overall execution times are summarized in Table~\ref{table:OverheadAccess} and plotted in Figure~\ref{fig:OverheadAccess}.
 
-\begin{table}[t!]
+\begin{table}
 	\centering
 	\scriptsize
 	\begin{tabular}{|c|c|c|c|c|c|}
@@ -797,7 +796,7 @@ always allow		& $1.27 \pm 0.53$ s	& $2.39 \pm 0.71$ s	& $3.10 \pm 0.74$s	& $29.8
 	\label{table:OverheadAccess}
 \end{table}
 
-\begin{figure}[h!]
+\begin{figure}
 	\centering
 	\includegraphics[width=1.1\textwidth]{graph_access.eps}
 	\caption{Overhead of Qishr's trampoline and the time taken to invoke the security manager under policies of different complexity.}
