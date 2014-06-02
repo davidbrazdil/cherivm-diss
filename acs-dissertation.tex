@@ -361,7 +361,7 @@ The process of loading a native library is initiated by calling the \texttt{load
 
 \begin{figure}
 	\centering
-	\includegraphics[width=0.35\textwidth]{dia_address_layout.pdf}
+	\includegraphics[width=0.3\textwidth]{dia_address_layout.pdf}
 	\label{fig:AddressSpaceLayout}
 	\caption{Address space layout of a sandbox instance from the point of view of the sandboxed code.}
 \end{figure}
@@ -468,9 +468,9 @@ The implementation in JamVM is therefore very relaxed and code does not even hav
 
 \begin{figure}
 	\centering
-	\texttt{TODO: diagram of the indirection table}
-	\caption{Indirection table used for revoking object references}
+	\includegraphics[width=0.8\textwidth]{dia_indirection_table.pdf}
 	\label{fig:IndirectionTable}
+	\caption{TODO}
 \end{figure}
 
 Additionally, Qishr adopts an indirection scheme which enables it to revoke old references. Object references do not point directly to the object heap but rather to an entry in a reference counting hash table unique to each sandbox, depicted in Figure~\ref{fig:IndirectionTable}. Whenever a reference is passed to a sandbox, it is recorded in the JNI frame and its reference count incremented. The counters are decremented whenever a frame is destroyed (Qishr makes sure that all eventually are), or earlier if the sandbox selectively gives up its right to use a reference by deleting it. Any references pointing to a slot with a zero counter are considered invalid. Upcalls invoked with revoked arguments will fail and revoked return values will throw a Java exception.
