@@ -2,10 +2,9 @@
 {\Huge \bf Abstract}
 \vspace{24pt} 
 
+With the necessity to reuse legacy code, or to employ readily available third-party libraries, it is not uncommon for large applications to be written in a single language. Such heterogeneous environments have inherent advantages, e.g.\ allowing security-critical components to be written in a memory-safe language like Java, while performance-critical code in C, but because there is no runtime separation between the two code bases, it is possible for the native code to corrupt the Java environment or to bypass its security.
 
-This is the abstract. Write a summary of the whole thing. Make 
-sure it fits in one page. 
-
+Qishr demonstrates that the capability-enabled CHERI processor can be used to isolate Java native code into a safe sandbox, from which it can only interact with the Java runtime and the system kernel through a secure interface. It guarantees that the code cannot break memory safety of Java objects, controls its access to system resources in accordance with the security policy enforced by Java on its classes, and provides a compatibility layer for legacy code written against the standard native interface.
 
 \newpage
 \vspace*{\fill}
