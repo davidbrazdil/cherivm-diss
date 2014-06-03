@@ -837,12 +837,12 @@ The example application invokes a native method which determines whether a file 
 		\hline
 \bf Security policy	& \bf Unsandboxed	& \bf AC disabled 	& \bf AC enabled 	& \bf AC diff & \bf Total diff \\
 		\hline
-null 				& $1.59 \pm 0.60$ s	& $2.67 \pm 0.77$ s	& $2.93 \pm 0.78$s	& $9.7 \pm 3.8$ \%	& $87.1 \pm 5.8$ \% \\
-always allow		& $1.27 \pm 0.53$ s	& $2.39 \pm 0.71$ s	& $3.10 \pm 0.74$s	& $29.8 \pm 4.0$ \%	& $143.6 \pm 6.6$ \% \\
-1 comparison		& $1.58 \pm 0.66$ s	& $2.66 \pm 0.78$ s	& $3.62 \pm 0.73$s	& $36.1 \pm 3.7$ \%	& $128.7 \pm 5.7$ \% \\
-4 comparisons		& $1.48 \pm 0.58$ s	& $2.62 \pm 0.73$ s	& $3.71 \pm 0.71$s	& $41.7 \pm 3.6$ \%	& $150.4 \pm 5.7$ \% \\
-8 comparisons		& $1.48 \pm 0.58$ s	& $2.68 \pm 0.77$ s	& $3.92 \pm 0.70$s	& $50.3 \pm 3.7$ \%	& $164.4 \pm 5.6$ \% \\
-16 comparisons	& $1.50 \pm 0.57$ s	& $2.65 \pm 0.73$ s	& $4.13 \pm 0.65$s	& $55.6 \pm 3.4$ \%	& $175.9 \pm 5.3$ \% \\
+null 			& $(1.59 \pm 0.60)$ s	& $(2.67 \pm 0.77)$ s	& $(2.93 \pm 0.78)$s	& $(9.7 \pm 3.8)$ \%	& $(87.1 \pm 5.8)$ \% \\
+always allow		& $(1.27 \pm 0.53)$ s	& $(2.39 \pm 0.71)$ s	& $(3.10 \pm 0.74)$s	& $(29.8 \pm 4.0)$ \%	& $(143.6 \pm 6.6)$ \% \\
+1 comparison		& $(1.58 \pm 0.66)$ s	& $(2.66 \pm 0.78)$ s	& $(3.62 \pm 0.73)$s	& $(36.1 \pm 3.7)$ \%	& $(128.7 \pm 5.7)$ \% \\
+4 comparisons		& $(1.48 \pm 0.58)$ s	& $(2.62 \pm 0.73)$ s	& $(3.71 \pm 0.71)$s	& $(41.7 \pm 3.6)$ \%	& $(150.4 \pm 5.7)$ \% \\
+8 comparisons		& $(1.48 \pm 0.58)$ s	& $(2.68 \pm 0.77)$ s	& $(3.92 \pm 0.70)$s	& $(50.3 \pm 3.7)$ \%	& $(164.4 \pm 5.6)$ \% \\
+16 comparisons		& $(1.50 \pm 0.57)$ s	& $(2.65 \pm 0.73)$ s	& $(4.13 \pm 0.65)$s	& $(55.6 \pm 3.4)$ \%	& $(175.9 \pm 5.3)$ \% \\
 		\hline
 	\end{tabular}
 	\caption{Time taken to execute a single \texttt{access} system call unsandboxed, with access control disabled and then enabled. The last two column show the difference between the fully sandboxed code and the other two versions at 95\% confidence.}
