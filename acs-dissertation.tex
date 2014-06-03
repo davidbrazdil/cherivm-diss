@@ -828,7 +828,7 @@ These benchmarks show that Qishr does not stand in the way of mostly self-contai
 
 The other common use for native methods is gaining access to system calls beyond the capacity of the Java framework. Even though the performance does not tend to be a concern in such use cases, the overhead incurred by consulting the security manager was measured.
 
-The example application invokes a native method which determines whether a file can be opened in read-only mode with the POSIX \texttt{access} call. Before the method is called, the current Security Manager is set to \emph{null}, one which always allows the call and others which compare the file path against several prefixes. The program was executed in three different modes. The base time required to perform the system call was determined by running it under the unsandboxed JamVM, and the overhead of the downcalls and upcalls with a version of Qishr with access control disabled. And lastly, reenabling access control allows to approximate the overhead of the Security Manager itself. The overall execution times are summarized in Table~\ref{table:OverheadAccess} and plotted in Figure~\ref{fig:OverheadAccess}.
+The example application invokes a native method which determines whether a file can be opened in read-only mode with the POSIX \texttt{access} call. Before the method is called, the current security manager is set to \emph{null}, one which always allows the call and others which compare the file path against several prefixes. The program was executed in three different modes. The base time required to perform the system call was determined by running it under the unsandboxed JamVM, and the overhead of the downcalls and upcalls with a version of Qishr with access control disabled. And lastly, reenabling access control allows to approximate the overhead of the security manager itself. The overall execution times are summarized in Table~\ref{table:OverheadAccess} and plotted in Figure~\ref{fig:OverheadAccess}.
 
 \begin{table}
 	\centering
@@ -858,7 +858,7 @@ always allow		& $1.27 \pm 0.53$ s	& $2.39 \pm 0.71$ s	& $3.10 \pm 0.74$s	& $29.8
 
 As expected, the base time and trampoline overhead remain constant, but the time spent inside the security manager rises together with the complexity of the configured policy. On average, the downcall/upcall management adds $76\%$ (at 95\% confidence). Without an active security manager, access control adds another $11\%$ which is very reasonable considering several Java methods are invoked in the process. However, if there is a Security Manager, Qishr creates a new Java string with the file path and invokes \texttt{checkRead}, already adding $67\%$ of the base time. 
 
-Access control on Qishr is therefore not cheap, yet still within reasonable bounds which would be further reduced with a more efficient interpreter (security manager is implemented in Java). Important is also the fact that Qishr's access control follows the principle of security proportionality, namely that with no security manager, the overhead is actually very small. This means that Qishr can be deployed both in a local environment, where users typically do not define their own security policy, and in an enterprise one, where the need for firmer access control outweighs the sacrificed performance. 
+Access control on Qishr is therefore not cheap, yet still within reasonable bounds which would be further reduced with a more efficient interpreter (the security manager is implemented in Java). Also important is the fact that Qishr's access control follows the principle of security proportionality, namely that with no security manager, the overhead is small. This means that Qishr can be deployed both in a local environment, where users typically do not define their own security policy, and in an enterprise one, where the need for firmer access control outweighs the sacrificed performance. 
 
 \subsection{Web Server}
 
@@ -869,24 +869,25 @@ Previous benchmarks each focused on a different aspect of the overhead incurred 
 	\scriptsize
 	\begin{tabular}{|l|c|c|c|}
 		\hline
-		\bf Test			& \bf JamVM			& \bf Qishr			& \bf Difference \\
+		\bf Test			& \bf JamVM		& \bf Qishr		& \bf Difference \\
 		\hline
-		static webpage		& $8.9 \pm 0.7$ s		& $10.3 \pm 0.8$ s 		& $16.7 \pm 2.5$ \% \\
-		file server			& $101.0 \pm 1.4$ s		& $118.8 \pm 1.6$ s 	& $17.6 \pm 0.4$ \% \\
+		static webpage (w/o pinning)	& $(9.7 \pm 0.9)$ s	& $(10.3 \pm 0.8)$ s	& $(8.6 \pm 2.5)$ \% \\
+		static webpage (w/ pinning)	& $(8.9 \pm 0.7)$ s	& $(10.3 \pm 0.8)$ s 	& $(16.7 \pm 2.5)$ \% \\
+		file server (w/o pinning)	& $(0.0 \pm 0.0)$ s	& $(118.8 \pm 1.6)$ s 	& $(0.0 \pm 0.0)$ \% \\
+		file server (w/ pinning)	& $(101.0 \pm 1.4)$ s	& $(118.8 \pm 1.6)$ s 	& $(17.6 \pm 0.4)$ \% \\
 		\hline
 	\end{tabular}
 	\caption{Overhead measurements for NanoHTTPd.}
 	\label{table:OverheadNanoHTTPd}
 \end{table}
 
-Two tests were carried out: hosting a small static webpage and downloading 1MB of random data. The client (\emph{curl}\footnote{http://curl.haxx.se/}) was running on another machine connected via Ethernet and first attempts, causing lazy class loading, were thrown away. The results, summarized in Table~\ref{table:OverheadNanoHTTPd}, show a reasonable overhead of approximately $14$-$19\%$ in both cases.
+Two tests were carried out: hosting a small static webpage and downloading 1MB of random data. The client, \emph{curl}\footnote{http://curl.haxx.se/}, was running on another machine connected via Ethernet and first attempts, causing lazy class loading, were thrown away. The results, summarized in Table~\ref{table:OverheadNanoHTTPd}, show a reasonable overhead of approximately 17\% in both cases.
+
+Robusta (\S\ref{sec:Robusta}) reports 2-10\% overhead for a similar type of operations\footnote{GNU Classpath implements \class{ZipFile} class in Java, not as a \emph{zlib} wrapper. Same compression tests were not reproducible.}, but the authors evaluated it against OpenJDK which does not support pinning. Tests where therefore re-run on JamVM with pinning disabled and a comparable overhead of 6-10\% measured. 
 
 The Java portion of the code runs equally fast on both JVMs and because access control is only applied when \texttt{listen} and \texttt{accept} are being invoked on a socket, it should have almost no impact on the overall performance once the connection is set up. The slowdown is located in the repeated calls to \texttt{write} which sends chunks of data -- passed inside byte buffers -- over the socket, pointing again to array copying as the main source of the overhead.
 
-At this point, it would be desirable to compare the performance of Qishr to Robusta (\S\ref{sec:Robusta}) which reports 2-10\% overhead for a similar type of operations\footnote{GNU Classpath implements \class{ZipFile} class in Java, not as a \emph{zlib} wrapper. Same compression tests were not reproducible.}. Yet this is not possible because Robusta was evaluated against OpenJDK which does not support pinning in the first place, and hence their overhead estimates do not encompass the additional work associated with array copying, only that of the security checks and the overhead always incurred by SFI.
-
 \chapter{Conclusion} 
-
 
 \appendix
 \singlespacing
