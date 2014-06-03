@@ -83,7 +83,7 @@
 Writing software in Java and other safe programming languages has inherent advantages, namely the promise of improved robustness, reliability and portability. Yet large software systems are hardly ever written in just one language because there are strong incentives to save money and time by incorporating ready-to-use third-party libraries or legacy code, or to implement some components in a more suitable language, most often in an attempt to improve performance. However, the lack of safety makes \emph{native code} a threat to the Java runtime as it has the potential to compromise its code safety properties and core security mechanisms. The decision to include native code is therefore always a trade-off between security and the benefits it can provide.
  
 According to reports from August 2013, approximately 20\% of the most popular applications on the Google Play store indeed do ship with native libraries~\cite{poeplau2014execute}, typically to reuse code across platforms. Protection of all those applications is more fragile since any bug inside the native code might have much larger repercussions than one contained within the managed portion of the code base. Worryingly, many critical native-code vulnerabilities have been discovered even inside the official Java Development Kit (JDK) framework~\cite{Tan:2008:ESS:1496711.1496736}.
- 
+
 To the enterprise environment, where security tends to be prioritized, Java is a platform capable of executing untrusted applications inside a safe environment that limits its access to system resources, and even running multiple such applications side-by-side. But the inability to constrain native code in the same manner dictates that only applications written exclusively for the Java Virtual Machine (JVM) can forced to comply with the chosen security policy.
  
 The contribution of this dissertation is Qishr, a JVM extension which leverages hardware capability-based mechanisms to ensure memory safety of native libraries attached to Java via the Java Native Interface (JNI) and integrates them into the Java Security Architecture.
@@ -466,8 +466,8 @@ The implementation in JamVM is therefore very relaxed and code does not even hav
 \begin{figure}
 	\centering
 	\includegraphics[width=0.8\textwidth]{dia_indirection_table.pdf}
+	\caption{Object reference indirection table facilitates reference revocation.}
 	\label{fig:IndirectionTable}
-	\caption{TODO}
 \end{figure}
 
 Additionally, Qishr adopts an indirection scheme which enables it to revoke old references. Object references do not point directly to the object heap but rather to an entry in a reference counting hash table unique to each sandbox, depicted in Figure~\ref{fig:IndirectionTable}. Whenever a reference is passed to a sandbox, it is recorded in the JNI frame and its reference count incremented. The counters are decremented whenever a frame is destroyed (Qishr makes sure that all eventually are), or earlier if the sandbox selectively gives up its right to use the references by deleting them. Any references pointing to a slot with a zero counter are considered invalid. Upcalls issued with revoked arguments will fail and revoked return values will throw a Java exception.
@@ -585,11 +585,44 @@ Experiments were also carried out with file descriptors replaced with sealed cap
 
 \chapter{Evaluation} 
 
-A working prototype of Qishr was implemented as an extension to the JamVM embedded Java interpreter, comprising of circa 1,700 lines of C code and 180 lines of MIPS64 assembly. The \lib{qishr} compatibility layer amounted to additional 1,800 lines of C and 100 lines of assembly. Further changes have been made to the build systems of JamVM and GNU Classpath in order to generate binaries compatible with the CHERI sandbox.
+\section{JNI Loopholes}
 
-This section evaluates the impact of this added code in respect to the safety guarantees, security properties and the performance of the platform. 
+Tan et al.\ compiled a list of loopholes in JNI~\cite{Tan06safejava} and experimentally proved that these have the potential to crash at least some JVMs. This section discusses the implications of changes in Qishr on these loopholes.
+
+\begin{description}
+\item{\bf Direct Access Through Java References} \\
+Object references are truly opaque and sandboxed code is not allowed access outside its memory space, preventing it from retrieving, modifying or corrupting the state of Java objects or the JVM.
+
+\item{\bf Interface Pointers} \\
+Individual sandboxes do not share the same instance of \texttt{JNIEnv} and therefore cannot compromise one another by rewriting entries in its function table. Instead, Qishr offers the same functionality with a system-domain trampoline and a \texttt{JNIEnv}-compatible wrapper for the client.
+
+\item{\bf Out-of-bounds Array Access} \\
+Array operations are not performed directly on the object heap but rather on their copies inside the framework later copied back by a trampoline function trusted to check the bounds. Any out-of-bounds access is therefore contained within the sandbox and cannot corrupt the data on the Java heap.
+
+\item{\bf Violating Access Control Rules} \\
+All field and method ID requests are approved by JamVM's visibility checker. Native code cannot change its execution context since the Java stack is outside the scope of the sandbox.
+
+\item{\bf Manual Memory Management} \\
+With regular JNI, native code must inform the JVM once it no longer needs array buffers requested with \texttt{Get\-<Type>\-Array\-Elements} functions (or similar ones), creating a C-like memory management with well known issues such as dangling pointers, multiple releases and memory leaks. Such functions are currently implemented at the compatibility layer using safe operations provided by the trampoline and their incorrect usage can only corrupt the memory of the sandbox. Nevertheless, this safety comes at the price of performance and devising a similar yet controlled interface is needed.
+
+\item{\bf Arguments of Wrong Classes} \\
+The trampoline verifies that all object arguments are valid references pointing to objects of the correct type as specified in the signature of the method or field, preventing typing bugs and type confusion attacks. This is possible because the class hierarchy is protected from the sandbox and hence the information can be trusted.
+
+\item{\bf Calling Wrong Methods} \\
+Similarly, attempts to access methods, fields and arrays with \texttt{JNIEnv} functions of the wrong type, e.g.\ accessing an \keyword{int} array with \texttt{Get\-Long\-Array\-Elements}, will throw an exception.
+
+\item{\bf Exception Handling} \\
+At the moment, Qishr does not address the issues of possible state inconsistency in the presence of a pending exception.
+
+\item{\bf Bypassing the Security Manager} \\
+Native code cannot perform potentially dangerous operations on its own. Its only option is calling the system-domain methods defined in the trampoline which consult the active security manager. Untrusted JNI code is therefore fully integrated into the Java Sandbox.
+\end{description}
+
+Furthermore, Qishr tracks object references passed to native code and garbage collects revoked references before the handle value is reallocated, completely eliminating the threat of dangling reference attacks.
 
 \section{Trusted Computing Base}
+
+A working prototype of Qishr was implemented as an extension to the JamVM Java interpreter, which was selected for its compliance with Java and POSIX standards, small memory footprint and good portability. Qishr comprises circa 1,700 additional lines of C code and 180 lines of MIPS64 assembly (measured by \emph{cloc}\footnote{http://cloc.sourceforge.net}). The \lib{qishr} compatibility layer amounted to 1,800 lines of C and 100 lines of assembly. Further changes have been made to the JamVM and GNU Classpath build systems to generate statically-linked and stripped binaries compatible with the CHERI sandbox.
 
 \begin{table}[h]
 	\centering
@@ -605,6 +638,8 @@ This section evaluates the impact of this added code in respect to the safety gu
 		JamVM (MIPS ASM)	& 240		\\
 		\emph{zlib} (C)		& 8,165		\\
 		\hline
+		\bf Total		& 27,533	\\
+		\hline
 		\end{tabular}
 		\caption{Breakdown of JamVM code base.}
 		\label{table:JamTCB}
@@ -616,14 +651,14 @@ This section evaluates the impact of this added code in respect to the safety gu
 		\hline
 		\bf Component			& \bf Size		\\
 		\hline
-		Qishr (shared)			& 75			\\
-		Qishr (method binding)	& 208 		\\
-		Qishr (native handles)	& 201		\\
-		Qishr (garbage collection)	& 133		\\				
-		Qishr (\texttt{JNIEnv} trampoline)	& 634		\\
-		Qishr (\lib{c} trampoline)	& 461		\\
-		libcheri (C)				& 1,067		\\
-		libcheri (asm)			& 297		\\
+		shared			& 75			\\
+		method binding	& 208 		\\
+		native handles	& 201		\\
+		garbage collection	& 133		\\				
+		\texttt{JNIEnv} trampoline	& 634		\\
+		\lib{c} trampoline	& 461		\\
+		\hline
+		\bf Total		& 1,712	\\
 		\hline
 		\end{tabular}
 		\caption{Breakdown of Qishr.}
@@ -671,24 +706,45 @@ This section evaluates the impact of this added code in respect to the safety gu
 		\end{tabular}
 		\caption{GNU Classpath: native code}
 	\end{subfigure}
-	\caption{Size of JamVM, Qishr and GNU Classpath as measured by \emph{cloc}\protect\footnotemark (counts only lines with actual code).}
+	\caption{Size of JamVM, Qishr and GNU Classpath as measured by \emph{cloc}.}
 \end{table}
 
-JamVM itself, as summarized in Table~\ref{table:JamTCB}, consists of approximately 20k lines of code and additional 8k from its \emph{zlib} dependency (\lib{c}, compiler, etc. are not counted). Qishr increases the size of the JVM by approximately 6\% (breakdown in Table~\ref{table:QishrTCB}), but the reader should note that a production-ready version will necessarily be larger as many \lib{c} functions and some upcalls are currently not implemented or supported. All of this code must be fully trusted.
+JamVM, as summarized in Table~\ref{table:JamTCB}, consists of approximately 19k lines of code\footnote{Other JVMs are much larger -- HotSpot comprises 250,000 lines of code -- but porting Qishr to them would not require its code to grow significantly.} and additional 8k from its \emph{zlib} dependency (\lib{c}, compiler, kernel, etc. are not counted). Qishr increases the size of the JVM by approximately 6\% (breakdown in Table~\ref{table:QishrTCB}), but the reader should note that a production-ready version will necessarily be larger as many \lib{c} functions and some upcalls are currently not implemented or supported. All of this code must be fully trusted.
 
-Be that as it may, the presence of the code actually removes significant portion of the framework code from the TCB. \footnotetext[1]{http://cloc.sourceforge.net/} GNU Classpath consists of 20k lines of C code out of the total 100k\footnote{Only the core of GNU Classpath was actually compiled for the tests. The entire framework includes other packages, such as the Java AWT (platform independent GUI library).} and the 1.7k lines that Qishr adds to JamVM radically reduce the level of trust that this native code requires. The sandbox completely eliminates the possibility of it violating the safety properties of the Java environment, putting it on a par with managed code, and it also cannot bypass the security manager.
+Be that as it may, the added code actually removes significant portion of the framework code from the JamVM TCB. GNU Classpath consists of 20k lines of C code out of the total 100k\footnote{Only the core of GNU Classpath was actually compiled for the tests. The entire framework includes other packages, such as the Java AWT (platform independent GUI library).} and the 1.7k lines that Qishr adds to JamVM radically reduce the level of trust that this native code requires. The sandbox completely eliminates the possibility of it violating the safety properties of the Java environment, putting it on a par with managed code, and it also cannot bypass the security manager.
 
 This is very important because up until now, a vulnerability inside native code would enable an attacker to issue system calls beyond what is permitted by the active policy. The Java portion of the framework is trusted to always consult the security manager before the native method is invoked, but now the \texttt{checkPermission} method is actually called transparently as part of the system call itself. 
 
-What follows is that if Qishr is trusted to call the security manager, the Java classes do not have to be any more since system calls can only be issued from native code. This is a very tempting idea as it further reduces the amount of trusted code in the framework to merely the class loader, the security manager and its dependencies. However, reaching that stage would required more work on preserving the original semantics of the code (\S\ref{sec:SyscallException}).
+What follows is that if Qishr is trusted to call the security manager, then the Java classes do not have to be any more because system calls can only be issued from native code. This is a very tempting idea as it further reduces the amount of trusted code in the framework to merely the class loader, the security manager and its dependencies. However, reaching that stage would required more work on preserving the original semantics of the code (\S\ref{sec:SyscallException}).
 
-Running the framework inside Qishr's sandbox is a highly attractive option but comes at the price of a small overhead, as will be evaluated in the remainder of this chapter. Administrators therefore might choose to fully trust the framework, which is after all under their complete control, and only sandbox native libraries from external sources. Reduction of the TCB size is, nevertheless, the key to building a secure system and Qishr can be one of the tools for achieving it.
+Running the framework inside Qishr's sandbox is an attractive option but comes at the price of a small overhead, as explained in the remainder of this chapter. Administrators therefore might choose to fully trust the framework, which is under their complete control, and only sandbox native libraries from external sources. Reduction of the TCB size is, nevertheless, the key to building a secure system, and Qishr can be one of the tools for achieving it.
 
 \section{Case Studies}
 
 The additional security measurements inserted into JamVM naturally have an impact on its performance. The overhead imposed by Qishr was measured on a prototype of CHERI, running on an Altera DE4 FPGA development board at 100MHz. 
 
-All experiments were executed with highest priority and Ethernet disabled (current driver keeps polling the device) but the results still suffered from high variation caused by frequent context switches. Time measurements were therefore sorted and the largest 10\% were removed as outliers. 
+\begin{figure}[t]
+	\centering
+	\begin{subfigure}{0.45\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{10_sodium.eps}
+		\caption{\lib{sodium}, JamVM, initIDs}
+	\end{subfigure}
+	\begin{subfigure}{0.45\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{10_matrix5.eps}
+		\caption{Matrix squaring, Qishr, $N = 5$}
+	\end{subfigure}
+	\begin{subfigure}{0.90\textwidth}
+		\centering
+		\includegraphics[width=0.5\textwidth]{10_access.eps}
+		\caption{Access control, Qishr, 8 comparisons}
+	\end{subfigure}
+	\caption{Examples of measurement histograms.}
+	\label{fig:hist}
+\end{figure}
+
+All experiments were executed with highest priority and Ethernet disabled (the current driver keeps polling the device) but the results still suffered from high variation caused by frequent scheduling interrupts. Time measurements were therefore sorted and the largest 10\% were removed after visual inspection of the histograms (examples in Figure~\ref{fig:hist}). 
 
 \subsection{Wrapping Native Libraries}
 
@@ -705,11 +761,11 @@ The testing program initializes the library, generates two key pairs, encrypts a
 		\hline
 		\bf Function		& \bf JamVM (direct) & \bf JamVM (array) & \bf Qishr	& \bf Difference \\
 		\hline
-		getPublicKeySize	& $78.94 \pm 5.50$ $\mu$s	& $78.45 \pm 5.21$ $\mu$s	& $229.3 \pm 27.9$ $\mu$s & $190.5 \pm 2.9$ \% \\
-		initIDs			& $2.665 \pm 0.955$ ms		& $2.341 \pm 0.829$ ms		& $4.182 \pm 0.745$ ms & $56.89 \pm 6.49$ \% \\
-		generateKeys		& $2.040 \pm 0.146$ s		& $2.045 \pm 0.079$ s		& $2.044 \pm 0.080$ s & 0 \\
-		encryptData		& $2.016 \pm 0.030$ s		& $2.020 \pm 0.027$ s		& $2.007 \pm 0.023$ s & 0 \\
-		decryptData		& $1.999 \pm 0.026$ s 		& $2.017 \pm 0.029$ s 		& $2.005 \pm 0.009$ s & 0 \\
+		getPublicKeySize	& $(78.94 \pm 5.50)$ $\mu$s	& $(78.45 \pm 5.21)$ $\mu$s	& $(229.3 \pm 27.9)$ $\mu$s & $(190.5 \pm 2.9)$ \% \\
+		initIDs			& $(2.665 \pm 0.955)$ ms		& $(2.341 \pm 0.829)$ ms		& $(4.182 \pm 0.745)$ ms & $(56.89 \pm 6.49)$ \% \\
+		generateKeys		& $(2.040 \pm 0.146)$ s		& $(2.045 \pm 0.079)$ s		& $(2.044 \pm 0.080)$ s & insignificant \\
+		encryptData		& $(2.016 \pm 0.030)$ s		& $(2.020 \pm 0.027)$ s		& $(2.007 \pm 0.023)$ s & insignificant \\
+		decryptData		& $(1.999 \pm 0.026)$ s 		& $(2.017 \pm 0.029)$ s 		& $(2.005 \pm 0.009)$ s & insignificant \\
 		\hline
 	\end{tabular}
 	\caption{Average running time of native methods in the \lib{sodium} JNI wrapper. The Difference column compares Qishr against JamVM with direct buffers at 95\% confidence interval.}
@@ -723,23 +779,23 @@ The testing program initializes the library, generates two key pairs, encrypts a
 	\label{fig:OverheadSodium}
 \end{figure}
 
-The results are summarized in Table~\ref{table:OverheadSodium} and Figure~\ref{fig:OverheadSodium}. Since JamVM supports pinning (gives direct access to array elements), there was no measurable difference between the two unsandboxed versions. 
+The results are summarized in Table~\ref{table:OverheadSodium} and Figure~\ref{fig:OverheadSodium}. Because JamVM supports pinning (gives direct access to array elements), there was no measurable difference between the two unsandboxed versions. 
 
-\texttt{getPublicKeySize} is a method which only returns a constant defined in the header of \lib{sodium} and it measures the overhead involved in invoking a native method. Regular JNI pops the Java stack and prepares the arguments in accordance with MIPS ABI. With Qishr, this also includes sealing object arguments, switching to the protection domain and setting up \lib{qishr}. That amounts to a small, \emph{roughly} constant\footnote{Depends on the number and type of arguments but quickly becomes negligible.} $150 \mu$s ($190\%$ more than regular JNI) overhead with each downcall.
+\texttt{getPublicKeySize} is a method which only returns a constant defined in the header of \lib{sodium} and the test measures the overhead involved in invoking a native method. Regular JNI pops the Java operand stack and prepares the arguments in accordance with MIPS ABI. With Qishr, this also includes sealing object arguments, switching to the protection domain and setting up \lib{qishr}. That amounts to a small, \emph{roughly} constant\footnote{Depends on the number and type of arguments but quickly becomes negligible.} $150 \mu$s overhead with each downcall. This is 190\% more than regular JNI which may sound like a lot but is actually microscopic when compared with the enormous 40,000\% overhead incurred by process-based isolation. 
 
-\texttt{initIDs} is representative of methods which interact with the VM as its purpose is to request and cache field and method handles for future use. If no errors occur, \texttt{initIDs} requests two class references, one field ID, eight method IDs (11 upcalls in total) and immediately returns. The additional work now also comprises of sealing capabilities, verifying arguments, visibility checks and more domain transitions. However, the overhead, $57\%$, is less significant than in the first case because traversing the class hierarchy involves many string comparisons. 
+\texttt{initIDs} is representative of methods which interact with the JVM as its purpose is to request and cache field and method handles for future use. If no errors occur, \texttt{initIDs} requests two class references, one field ID, eight method IDs (11 upcalls in total) and immediately returns. The additional work now consists of sealing capabilities, verifying arguments, visibility checks and more domain transitions. The overhead, 57\%, is less significant than in the first case because traversing the class hierarchy involves many string comparisons. 
 
-And this trend only continues as the amount of work done by the native code increases. This is demonstrated by the last three operations which carry out extensive cryptographic computation. They all operate on several small buffers (up to five, each tens of bytes long), each requiring seven upcalls to determine their type and obtain a pointer to the backing buffer. With Qishr that means copying an array in and out of the sandbox. Yet these overheads are so marginal in comparison with the computation itself that the differences between the sandboxed and unsandboxed versions are well within one standard deviation. 
+This trend continues as the amount of work done by the native code increases. This is demonstrated by the last three operations which carry out extensive cryptographic computation. They all operate on several small buffers (up to five, each tens of bytes long), each requiring seven upcalls to determine their type and obtain a pointer to the backing buffer. With Qishr that means copying an array in and out of the sandbox. Yet these overheads are so marginal in comparison with the computation itself that the differences between the sandboxed and unsandboxed versions are statistically insignificant at 95\% confidence interval.
 
-This makes Qishr highly suitable for executing complicated long-running code, typically more likely to contain memory safety bugs, without any fear of it corrupting the JVM. If the code comes from an untrusted source, it can also be executed with a very strict security policy as it should only need to read from \texttt{/dev/urandom}.
+This makes Qishr highly suitable for executing complicated long-running code, typically more likely to contain memory safety bugs, without any fear of it corrupting the JVM. If the code comes from an untrusted source, it can also be executed with a very strict security policy enforcing that it can only read from \texttt{/dev/urandom}.
 
 \subsection{Fast Arithmetic}
 
 Performance optimization can be a strong argument for including native code in Java applications but not all operations will benefit from a native implementation. Benchmarks carried out by Kurzyniec et al.~\cite{Kurzyniec01efficientcooperation} show that the enterprise-level JVMs, such as Oracle HotSpot, execute Java bytecode so efficiently that just the JNI invocation overhead itself can far exceed the achieved performance improvement. They conclude that in general JNI can be used only for heavy computation requiring very little interaction with the VM, such as \lib{sodium} described above. 
 
-The point when native code becomes faster is necessarily further for Qishr than it is for regular JNI. That, of course, depends on the nature of the operation, but one possible comparison was made by implementing the textbook $O(N^3)$ matrix-squaring algorithm in Java and C. The methods are given two float arrays, one for input and one for output. That way, they only need to access the individual elements of the array and do not, for example, have to allocate new memory. 
+The point when native code becomes faster is necessarily later for Qishr than it is for regular JNI. That, of course, depends on the nature of the operation, but one possible comparison was made by implementing the textbook $O(N^3)$ matrix-squaring algorithm in Java and C. The methods are given two \keyword{float} arrays, one for input and one for output. That way, they only need to access the individual elements of the array and do not, for example, have to allocate new memory. 
 
-Figures~\ref{fig:OverheadMatrixCrossing} and~\ref{fig:OverheadMatrix} illustrate the dependence of time taken by each implementation on the size of the matrix. Contrary to the results obtained by Kurzyniec, the overhead of JNI is very small when contrasted with the slow interpreter powering JamVM, and becomes faster as soon as $N=2$. The overhead of Qishr is much higher, outperforming the interpreter by $N = 4$, and this is caused partially by downcalls and upcalls taking longer (constant overhead) but mainly by the fact that Qishr keeps copying the matrix in and out of the sandbox (overhead increasing with the matrix size).
+Figures~\ref{fig:OverheadMatrixCrossing} and~\ref{fig:OverheadMatrix} illustrate the time taken for varying matrix sizes for the three implementations. Contrary to the results obtained by Kurzyniec, the overhead of JNI is very small when contrasted with the slow interpreter powering JamVM, and becomes faster as soon as $N=2$. The overhead of Qishr is much higher, only outperforming the interpreter by $N \ge 4$. This is caused partially by downcalls and upcalls taking longer (constant overhead) but mainly by the fact that Qishr keeps copying the matrix in and out of the sandbox (overhead increasing with the square of the matrix size).
 
 \begin{figure}
 	\centering
@@ -762,9 +818,9 @@ Figures~\ref{fig:OverheadMatrixCrossing} and~\ref{fig:OverheadMatrix} illustrate
 	\label{fig:OverheadMatrixSubtract}
 \end{figure}
 
-At the moment, this is Qishr's Achilles heel. Even though the floating-point arithmetic of JamVM is abominably sluggish, the VM at least provides fast access to its arrays. Looking at the plot of the overhead of Qishr over regular JNI in Figure~\ref{fig:OverheadMatrixSubtract} it seems that the difference in their performance tends to somewhere near 110\%, i.e.\ Qishr taking twice as long to finish for sufficiently large matrices. 
+At the moment, this is Qishr's Achilles heel. Even though the floating-point arithmetic of JamVM is abominably sluggish, the JVM at least provides fast access to its arrays. Looking at the plot of the overhead of Qishr over regular JNI in Figure~\ref{fig:OverheadMatrixSubtract} the difference in their performance tends to near 110\%, i.e.\ Qishr taking twice as long to finish for sufficiently large matrices. 
 
-On the other hand, running such code on Qishr substantially decreases the amount of trust the users must put in its safety because the JVM becomes protected from potential problems with buffer overflow, dangling pointers, multiple releases and other issues related to memory management, typing and encapsulation. Since the only privilege the code should need is working with contents of arrays, it can also be executed inside a Java sandbox with virtually no permissions whatsoever.
+Running such code on Qishr substantially decreases the amount of trust the users must put in its safety because the JVM becomes protected from potential problems with buffer overflow, dangling pointers, multiple releases and other issues related to memory management, typing and encapsulation. As the only privilege the code should need is working with contents of arrays, it can also be executed inside a Java sandbox with virtually no permissions whatsoever.
 
 These benchmarks show that Qishr does not stand in the way of mostly self-contained native code, but does become a performance burden once domains start sharing resources. Overcoming the issues with safe direct heap access therefore should be one of the priorities of future work. A promising path seems to be the slowly maturing concept of CHERI's ephemeral capabilities in combination with a more detailed model of JNI state~\cite{Tan:2010:JNIFormalModel}. 
 
@@ -831,40 +887,6 @@ At this point, it would be desirable to compare the performance of Qishr to Robu
 
 \chapter{Conclusion} 
 
-Tan et al.\ comprised a list of loopholes in JNI~\cite{Tan06safejava} and experimentally proved that these have the potential to crash at least some JVMs. This section discusses the implications of changes in Qishr on these loopholes.
-
-\begin{description}
-\item{\bf Direct Access Through Java References} \\
-Object references are truly opaque and sandboxed code is not allowed access outside its memory space, preventing it from retrieving, modifying or corrupting the state of Java objects or the JVM.
-
-\item{\bf Interface Pointers} \\
-Individual sandboxes do not share the same instance of \texttt{JNIEnv} and therefore cannot compromise one another by rewriting entries in its function table. Instead, Qishr offers the same functionality with a system-domain trampoline and a \texttt{JNIEnv}-compatible wrapper for the client.
-
-\item{\bf Out-of-bounds Array Access} \\
-Array operations are not performed directly on the object heap but rather on their copies inside the framework later copied back by a trampoline function trusted to check the bounds. Any out-of-bounds access is therefore contained within the sandbox and cannot corrupt the data on the Java heap.
-
-\item{\bf Violating Access Control Rules} \\
-All field and method ID requests are approved by JamVM's visibility checker. Native code cannot change its execution context since the Java stack is outside the scope of the sandbox.
-
-\item{\bf Manual Memory Management} \\
-With regular JNI, native code must inform the JVM once it no longer needs array buffers requested with \texttt{Get\-<Type>\-Array\-Elements} functions (or similar ones), creating a C-like memory management with well known issues such as dangling pointers, multiple releases and memory leaks. Such functions are currently implemented at the compatibility layer using safe operations provided by the trampoline and their incorrect usage can only corrupt the memory of the sandbox. Nevertheless, this safety comes at the price of performance and devising a similar yet controlled interface is needed.
-
-\item{\bf Arguments of Wrong Classes} \\
-The trampoline verifies that all object arguments are valid references pointing to objects of the correct type as specified in the signature of the method or field, preventing typing bugs and type confusion attacks. This is possible because the class hierarchy is protected from the sandbox and hence the information can be trusted.
-
-\item{\bf Calling Wrong Methods} \\
-Similarly, attempts to access methods, fields and arrays with \texttt{JNIEnv} functions of the wrong type, e.g.\ accessing an \keyword{int} array with \texttt{Get\-Long\-Array\-Elements}, will throw an exception.
-
-\item{\bf Exception Handling} \\
-At the moment, Qishr does not address the issues of possible state inconsistency in the presence of a pending exception.
-
-\item{\bf Bypassing the Security Manager} \\
-Native code cannot perform potentially dangerous operations on its own. Its only option is calling the system-domain methods defined in the trampoline which consult the active security manager. Untrusted JNI code is therefore fully integrated into the Java Sandbox.
-\end{description}
-
-To my best knowledge, Qishr is also the first tool to reliably garbage collect object references passed to native code, thus completely eliminating the threat of dangling reference attacks.
-
-[revoking caps]
 
 \appendix
 \singlespacing

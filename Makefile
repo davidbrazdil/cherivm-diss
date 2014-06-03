@@ -18,6 +18,7 @@ acs-dissertation.pdf: acs-dissertation.tex acs-dissertation.bib titlepage.tex de
 	$(BIBTEX) acs-dissertation
 	$(LATEX) acs-dissertation
 	$(LATEX) acs-dissertation
+	$(LATEX) acs-dissertation
 
 clean:
 	$(RM) -f acs-dissertation.pdf acs-dissertation.ps acs-dissertation.dvi 
