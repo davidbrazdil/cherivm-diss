@@ -624,7 +624,7 @@ Furthermore, Qishr tracks object references passed to native code and garbage co
 
 A working prototype of Qishr was implemented as an extension to the JamVM Java interpreter, which was selected for its compliance with Java and POSIX standards, small memory footprint and good portability. Qishr comprises circa 1,700 additional lines of C code and 180 lines of MIPS64 assembly (measured by \emph{cloc}\footnote{http://cloc.sourceforge.net}). The \lib{qishr} compatibility layer amounted to 1,800 lines of C and 100 lines of assembly. Further changes have been made to the JamVM and GNU Classpath build systems to generate statically-linked and stripped binaries compatible with the CHERI sandbox.
 
-\begin{table}[h]
+\begin{table}[t]
 	\centering
 	\begin{subfigure}{0.45\textwidth}
 		\centering
@@ -723,7 +723,7 @@ Running the framework inside Qishr's sandbox is an attractive option but comes a
 
 The additional security measurements inserted into JamVM naturally have an impact on its performance. The overhead imposed by Qishr was measured on a prototype of CHERI, running on an Altera DE4 FPGA development board at 100MHz. 
 
-\begin{figure}[t]
+\begin{figure}[t!]
 	\centering
 	\begin{subfigure}{0.45\textwidth}
 		\centering
@@ -797,21 +797,21 @@ The point when native code becomes faster is necessarily later for Qishr than it
 
 Figures~\ref{fig:OverheadMatrixCrossing} and~\ref{fig:OverheadMatrix} illustrate the time taken for varying matrix sizes for the three implementations. Contrary to the results obtained by Kurzyniec, the overhead of JNI is very small when contrasted with the slow interpreter powering JamVM, and becomes faster as soon as $N=2$. The overhead of Qishr is much higher, only outperforming the interpreter by $N \ge 4$. This is caused partially by downcalls and upcalls taking longer (constant overhead) but mainly by the fact that Qishr keeps copying the matrix in and out of the sandbox (overhead increasing with the square of the matrix size).
 
-\begin{figure}
+\begin{figure}[t!]
 	\centering
 	\includegraphics[width=1.1\textwidth]{graph_matrix_crossing.eps}
 	\caption{Crossing points at which JNI and Qishr outperform the Java interpreter in matrix squaring.}
 	\label{fig:OverheadMatrixCrossing}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[t!]
 	\centering
 	\includegraphics[width=1.1\textwidth]{graph_matrix.eps}
 	\caption{Performance of a matrix squaring algorithm in pure Java, JNI and Qishr. Overall shape remains the same, only their parameters change.}
 	\label{fig:OverheadMatrix}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[t!]
 	\centering
 	\includegraphics[width=1.1\textwidth]{graph_matrix_subtract.eps}
 	\caption{Overhead of Qishr over regular JNI during matrix squaring as a function of the matrix size. Some factors eventually diminish but the overhead of array copying depends on the size of the input.}
@@ -830,7 +830,7 @@ The other common use for native methods is gaining access to system calls beyond
 
 The example application invokes a native method which determines whether a file can be opened in read-only mode with the POSIX \texttt{access} call. Before the method is called, the current security manager is set to \emph{null}, one which always allows the call and others which compare the file path against several prefixes. The program was executed in three different modes. The base time required to perform the system call was determined by running it under the unsandboxed JamVM, and the overhead of the downcalls and upcalls with a version of Qishr with access control disabled. And lastly, reenabling access control allows to approximate the overhead of the security manager itself. The overall execution times are summarized in Table~\ref{table:OverheadAccess} and plotted in Figure~\ref{fig:OverheadAccess}.
 
-\begin{table}
+\begin{table}[t]
 	\centering
 	\scriptsize
 	\begin{tabular}{|c|c|c|c|c|c|}
@@ -849,9 +849,9 @@ always allow		& $(1.27 \pm 0.53)$ s	& $(2.39 \pm 0.71)$ s	& $(3.10 \pm 0.74)$s	&
 	\label{table:OverheadAccess}
 \end{table}
 
-\begin{figure}
+\begin{figure}[t]
 	\centering
-	\includegraphics[width=1.1\textwidth]{graph_access.eps}
+	\includegraphics[width=1.0\textwidth]{graph_access.eps}
 	\caption{Overhead of Qishr's trampoline and the time taken to invoke the security manager under policies of different complexity.}
 	\label{fig:OverheadAccess}
 \end{figure}
@@ -864,7 +864,7 @@ Access control on Qishr is therefore not cheap, yet still within reasonable boun
 
 Previous benchmarks each focused on a different aspect of the overhead incurred by Qishr. \emph{NanoHTTPd}\footnote{http://nanohttpd.com/}, a lightweight Java HTTP server, was selected for measurements on a larger, real-life application. Though \emph{NanoHTTPd} does not ship with own native code, its execution inevitably makes extensive use of socket system calls implemented in the native portion of the framework. Running the framework in a sandbox therefore creates the same conditions as if it did.
 
-\begin{table}
+\begin{table}[t]
 	\centering
 	\scriptsize
 	\begin{tabular}{|l|c|c|c|}
