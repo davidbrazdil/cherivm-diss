@@ -116,11 +116,11 @@ Qishr does not guarantee safety of the sandboxed native code but it does protect
 
 \section{Java Security Architecture}
 
-Java was designed as a universal platform for networked environments which necessarily made its security model one of the most important architectural features. On all its levels, Java addresses the common pitfalls of modern software engineering which can lead to introduction of security vulnerabilities, and thus guarantees a higher minimal level of application robustness and alleviates the process of implementing additional security measures.
+Java was designed as a universal platform for networked environments which necessarily made its security model one of the most important architectural features. Java addresses common pitfalls of modern software engineering that can lead to introduction of security vulnerabilities, and thus guarantees a higher minimal level of application robustness and alleviates the process of implementing additional security measures.
 
 At the core of the platform lies the Java programming language, an easy-to-learn type-safe language with automatic memory management, built around the principles of object-oriented programming. These properties significantly reduce the likelihood of writing unsafe code and also encourage the principle of least privilege via separation of executable code and its state into smaller object-level protection domains.
 
-Java applications are expected to be distributed over public networks and therefore the platform has to account for composition of code with varying levels of trust. Untrusted code can be executed inside a safe environment isolated from other code running inside the same virtual machine and be subject to a programmatically managed security policy which can limit its access to guarded resources. This is called the \emph{Java Sandbox Model}.
+Java applications are expected to be distributed over public networks and therefore the platform has to account for composition of code with varying levels of trust. Untrusted code can be executed inside a safe environment isolated from other code running inside the same virtual machine and be subject to a programmatically managed security policy that can limit its access to guarded resources. This is called the \emph{Java Sandbox Model}~\cite{Gong:1997:GBS:1267279.1267289}.
 
 Additionally, the Java framework provides a large set of extensible security APIs with ready-to-use implementation of many cryptographic algorithms and standardized protocols for public key infrastructure, authorization and encrypted network communication. 
 
@@ -131,7 +131,7 @@ The security of the Java platform is deeply rooted in the type, memory and contr
 \label{section:TypeConfusion}
 Java's type system is dynamic, although most types are actually checked statically for the sake of performance. Operations which are checked at runtime include array assignments, operations on generic classes and type casts. Unfortunately, the type inference algorithm has been shown to contain vulnerabilities~\cite{Suenaga:2012:JavaVulnerability} which open the door to type confusion attacks~\cite{Oh:2012:JavaExploitReport} and these can subsequently be exploited to bypass the security of the platform~\cite{McGraw:1999:SJG:298616}.
 
-Memory safety in Java is strongly connected to the principles of OOP. Code does not have direct access to the heap but rather has to adhere to a model of a memory space structured into object instances and their internal fields protected by the reference monitor, accessed through opaque references and automatically managed by the garbage collector. Together with the type system and explicit range checks, Java prevents common bugs, e.g.\ buffer overflow or dangling pointers, which can give the attacker access to an arbitrary part of the memory.
+Memory safety in Java is strongly connected to the principles of OOP. Code can not do arbitrary pointer arithmetic but rather has to adhere to a model of a memory space structured into object instances and their internal fields protected by the reference monitor, accessed through opaque references and automatically managed by the garbage collector. Together with the type system and explicit range checks, Java prevents common bugs, e.g.\ buffer overflow or dangling pointers, which can give the attacker access to an arbitrary part of the memory.
 
 \subsection{Object Encapsulation}
 
@@ -144,7 +144,7 @@ Individual classes are separate protection domains which only permit the modific
 
 \subsection{Java Sandbox Model}
 
-The design of the Java platform was deeply influenced by the web and the need to dynamically load executable code from various, potentially untrusted sources into one instance of the Java virtual machine. The language safety properties do protect the integrity of the memory, but just by themselves cannot prevent the external code from abusing the system resources available to the JVM or interacting with code from another source. To this end, the platform provides a number of access control mechanisms which make it possible to execute different portions of the loaded code with different sets of permissions available to them. 
+The design of the Java platform was deeply influenced by the web and the need to dynamically load executable code from various, potentially untrusted sources into one instance of the Java virtual machine. The language safety properties do protect the integrity of the memory, but cannot prevent the external code from abusing the system resources available to the JVM or interacting with code from another source. To this end, the platform provides a number of access control mechanisms which make it possible to execute different portions of the loaded code with different sets of permissions available to them. 
 
 \begin{figure}
 	\centering
@@ -152,15 +152,15 @@ The design of the Java platform was deeply influenced by the web and the need to
 	\caption{Class loading in Java}
 \end{figure}
 
-Java code is loaded into the virtual machine by a special objects called \emph{class loaders}. The main task of a class loader is extracting bytecode from some external source and passing it on to the bytecode verifier which determines whether it complies with the required language safety properties. Typically it also selects the desired security policy which will be later enforced upon it, and it is the class loader's task to make sure that the newly loaded code will not replace any existing classes (including itself and other security-critical classes) unless this is explicitly allowed. 
+Java code is loaded into the virtual machine by a special objects called \emph{class loaders}. The main task of a class loader is extracting bytecode from some external source and passing it to the bytecode verifier which determines whether it complies with the required language safety properties. Typically it also selects the desired security policy which will be later enforced upon it. It is the class loader's task to make sure that the newly loaded code will not replace any existing classes (including itself and other security-critical classes) unless this is explicitly allowed. 
 
-Every Java VM provides a primordial class loader implemented in native code which bootstraps the framework and immediately hands the process over to its loader. Code with sufficient permissions can then define new, potentially simultaneously active class loaders and arrange them into hierarchies. Because class loaders are also responsible for resolving classes and methods for the code loaded by them, they can be used to create local namespaces, effectively isolating codebases which should not be allowed to interact.
+Every JVM provides a primordial class loader implemented in native code, which bootstraps the framework and immediately hands the process over to its loader. Code with sufficient permissions can then define new, potentially simultaneously active class loaders and arrange them into hierarchies. Because class loaders are also responsible for resolving classes and methods for the code loaded by them, they can be used to create local namespaces, effectively isolating codebases which should not be allowed to interact.
 
-The last component of the Java sandbox is a reference monitor, called the security manager. Before untrusted code is called, the parent can set a thread-local reference to a \class{SecurityManager} object which implements the security policy that is to be enforced. Should the untrusted code attempt to access system or VM resources during its execution, it must do so through the framework API and these methods always consult the active security manager before access is granted.
+The last component of the Java sandbox is a reference monitor, called the security manager. Before untrusted code is called, the parent can set a thread-local reference to a \class{SecurityManager} object which implements the security policy that is to be enforced. Should the untrusted code attempt to access system or JVM resources during its execution, it must do so through the framework API and these methods always consult the active security manager before access is granted.
 
 \subsection{Java Native Interface}
 
-Just like bytecode, shared libraries are loaded by a class loader and reside in its namespace. The method resolver uses a naming convention defined in the JNI specification to bind a Java method (marked \keyword{native}) with a corresponding function in the native library.
+Like bytecode, shared libraries are loaded by a class loader and reside in its namespace. The method resolver uses a naming convention defined in the JNI specification to bind a Java method (marked \keyword{native}) with a corresponding function in the native library.
 
 \begin{figure}
 	\includegraphics[width=\textwidth]{dia_jni_orig.pdf}
@@ -175,29 +175,29 @@ Just like bytecode, shared libraries are loaded by a class loader and reside in 
 	\label{listing:HelloJNI}
 \end{figure}
 
-Developers are provided with a C/C++ header which contains the definitions of types compatible with the primitive types used in Java, the \texttt{jobject} type to represent object references (typically pointers to the object heap) and the \texttt{JNIEnv} data structure containing functions that provide an API for interfacing with the JVM, such as reading/assigning values of object fields, creating new objects, or invoking other managed methods. A pointer to an instance of \texttt{JNIEnv} is passed to the function together with the actual parameters of the corresponding method call. Figure~\ref{fig:OverviewJNI} gives a simplified overview of the architecture, and Figure~\ref{listing:HelloJNI} shows an example of a Java class with a \texttt{native} method implemented in C.
+Developers are provided with a C/C++ header which contains the definitions of types compatible with the primitive types used in Java, the \texttt{jobject} type to represent object references (typically pointers to the object heap) and the \texttt{JNIEnv} data structure containing functions that provide an API for interfacing with the JVM, such as reading/assigning values of object fields, creating new objects, or invoking other managed methods. A pointer to \texttt{JNIEnv} is passed to the function together with the actual parameters of the corresponding method call. Figure~\ref{fig:OverviewJNI} gives a simplified overview of the architecture, and Figure~\ref{listing:HelloJNI} shows an example of a Java class with a \texttt{native} method implemented in C.
 
-However, the Java platform does not provide any means of containing native code. Because it resides in the same virtual address space as the JVM, it does have unlimited access to the object heap and can both read and modify any object on it, including the class loaders. Similarly, native code can issue system calls without the knowledge of the security manager or even modify the state of the virtual machine. Giving a piece of code the permission to load native libraries is therefore equivalent to giving it all the permissions.
+The Java platform does not provide any means of containing native code. Because it resides in the same virtual address space as the JVM, it has unlimited access to the object heap and can both read and modify any object on it, including the class loaders. Similarly, native code can issue system calls without the knowledge of the security manager or even modify the state of the virtual machine. Giving a piece of code the permission to load native libraries is therefore equivalent to giving it all the permissions.
 
 \subsection{Trust and Native Code}
 
 Previous sections have explained the role of the three pillars of Java security: language safety, secure class loading and a reference monitor. To understand how native code fits into this picture, it is essential to understand the relationship between these three components and the assumptions they make.
 
-A Java VM consists mainly of a bytecode interpreter (or a compiler into native code), a minimal class manager with a bytecode verifier, memory management code and a small set of low-level classes implemented in native code which facilitate communication between the VM and the managed code, e.g. to provide reflection. The entire VM codebase must be fully trusted and it must ensure that only safe code will ever be executed.
+A JVM consists mainly of a bytecode interpreter (or a JIT compiler), a minimal class manager with a bytecode verifier, memory management code and a small set of low-level classes implemented in native code which facilitate communication between the JVM and the managed code, e.g. to provide reflection. The entire JVM codebase must be fully trusted and it must ensure that only safe code will ever execute.
 
 The framework, on the other hand, is mostly written in Java with a relatively small number of native methods which give managed code access to system calls and only these therefore need to be trusted to not violate language safety. The framework includes classes which abstract over the system resources, provides its own class loader, which selects the appropriate security policy and passes bytecode over to the JVM's verifier and loader, and a default implementation of the security manager. All of these Java classes, as well as the native code, are trusted to not compromise the class hierarchy and to always enforce the active security policy.
 
-Since both the developers of the virtual machine and the system administrator have all of the code above under control, trusting it is not a problem. However, when it comes to application code, the big discrepancy between programs written purely in Java and those which ship with native libraries is obvious. Even if a Java application is not fully trusted, activating the security manager enables the administrator to ensure the safety of its execution. Conversely, any heterogeneous application must be fully trusted.
+Because both the developers of the virtual machine and the system administrator have all of the code above under control, trusting it is not a problem. When it comes to application code, the big discrepancy between programs written purely in Java and those which ship with native libraries is obvious. Even if a Java application is not fully trusted, activating the security manager enables the administrator to ensure the safety of its execution. Conversely, any heterogeneous application must be fully trusted.
 
 \section{Security with Capabilities}
 
-Memory protection and decomposition of software into isolated components are highly desired security properties but contemporary computer systems do not provide the means of achieving them. Most commonly, operating systems provide process isolation with virtual addressing and inter-process communication. This approach, however, suffers from poor scalability due to a high performance penalty imposed by the Translation Look-aside Buffer (TLB) as the number of protection domains and the domain switches between them increases~\cite{watson2012cheri}.
+Memory protection and decomposition of software into isolated components are highly desired security properties but contemporary computer systems do not provide the means of achieving them. Most commonly, operating systems provide process isolation with virtual addressing and inter-process communication. This approach suffers from poor scalability due to a high performance penalty imposed by the Translation Look-aside Buffer (TLB) as the number of protection domains and the domain switches between them increases~\cite{watson2012cheri}.
 
 To the contrary, capabilities have proven to be a security primitive which allows for fine-grained low-overhead software compartmentalization within a single address space. This makes them an ideal tool for applying the principle of least privilege on a very small scale, i.e. running each software component with only the access rights it needs, and that in turn mitigates the consequences of security vulnerabilities which inevitably appear in the code. 
 
 \subsection{Overview of CHERI}
 
-The CHERI extension of the MIPS ISA adds capabilities as a new security primitive that can be utilized by the operating system and other software running on top of it. The result is a hybrid capability architecture which is backwards-compatible with the traditional form of process isolation with virtual address spaces, but simultaneously enables capability-aware software to employ additional security measures within the address space assigned to the running process.
+The CHERI extensions of the MIPS ISA adds capabilities as a new security primitive that can be utilized by the operating system and other software running atop. The result is a hybrid capability architecture which is backwards compatible with the traditional form of process isolation with virtual address spaces, but simultaneously enables capability-aware software to employ additional security measures within the address space assigned to the running process.
 
 Applications can use CHERI capabilities in many ways. The most elementary use case is treating them as fat pointers, i.e.\ pointers with an upper limit and a set of permissions~\cite{kwon2013low}. This is particularly useful when dealing with pointers to arrays or data structures as the hardware automatically performs zero-overhead runtime bounds checking and thus prevents exploitation of buffer overflow bugs. 
 
@@ -208,7 +208,7 @@ CHERI capabilities can also be sealed, in which case they cannot be used in load
 \end{inparaenum}
 Each such pair of compatible capabilities can be used by the holder to perform an atomic domain transition with the \insn{CCall} instruction which unseals the two capabilities, sets the limits of accessible memory and jumps to the given function. Object capabilities can therefore be safely passed to an untrusted component (if confined to a non-overlapping memory region) as they only allow access to the internal state of the object via controlled access points. It is easy to see that a similar principle lies at the heart of the object paradigm implemented by Java and other object-oriented languages.
 
-One of the weaknesses typically associated with capabilities is the difficulty of access rights' revocation, e.g.\ after an object is destroyed and its memory region allocated to another. CHERI does not solve this problem entirely and still relies on the software stack to either guarantee virtual space non-reuse or to provide a form of capability garbage collection. It does, however, alleviate the process by enabling capabilities to be marked \emph{ephemeral} and the right to store ephemeral capabilities to be removed from a majority of an object's memory space, hence bounding their potential spread.
+One of the weaknesses typically associated with capabilities is the difficulty of access rights' \emph{revocation}, e.g.\ after an object is destroyed and its memory region allocated to another. CHERI does not solve this problem entirely and still relies on the software stack to either guarantee virtual space non-reuse or to provide a form of capability garbage collection. It does, however, alleviate the process by enabling capabilities to be marked \emph{ephemeral} and the right to store ephemeral capabilities to be removed from a majority of an object's memory space, hence bounding their potential spread.
 
 \subsection{Protecting Capabilities}
 
@@ -222,7 +222,7 @@ CHERI implements capabilities as 4-word (256-bit) data structures with the follo
 
 Because these are too big to fit into standard registers, CHERI extends the register file with 28 general-purpose and five specialized capability registers, and defines their function in a new ABI convention. Extra caution is required when calling less trusted code because it may not conform to the convention. Specifically, the caller must explicitly clear all unused registers to avoid leaking rights and private data to the callee.
 
-Capabilities must be protected by the hardware yet at the same time it is highly desirable to allow capabilities to be stored together with normal data. To this end, each capability register has a tag which indicates whether it is holding a valid capability or not, and correspondingly the physical memory is required to associate a tag with every fourth word (capabilities in memory must be aligned accordingly). The instructions defined in the extended ISA are then the only ones allowed to set this tag as they are trusted to preserve the security properties, mainly that capability manipulation must never increase rights. Storing into memory with original MIPS instructions always clears the tag of the corresponding capability block. Invoking a capability instruction with an invalid argument traps.
+Capabilities must be protected by the hardware yet at the same time it is desirable to allow capabilities to be stored together with data. To this end, each capability register has a tag which indicates whether it is holding a valid capability or not, and correspondingly the physical memory is required to associate a tag with every fourth word (capabilities in memory must be aligned). The instructions defined in the extended ISA are then the only ones allowed to set this tag as they are trusted to preserve the security properties, mainly that capability manipulation must never increase rights. Storing into memory with original MIPS instructions always clears the tag of the corresponding capability block. Invoking a capability instruction with an invalid operand traps.
 
 \subsection{Pointer Indirection}
 
@@ -236,7 +236,7 @@ The same principle is applied to instruction fetch from \reg{PC}, only it is ind
 
 \subsection{Object Capabilities}
 
-To create an object capability, the object owner first creates an unsealed capability with \emph{seal} and \emph{execute} rights such that the capability's type is a pointer to the entry function inside the region defined by the base and length, i.e. \texttt{type~=~\&function} and \texttt{base~<=~type~<~base~+~length}. Notice that only code which already has the rights to the memory containing the entry function can create this capability. 
+To create an object capability, the object owner first creates an unsealed capability with \emph{seal} and \emph{execute} rights such that the capability's type is a pointer to the entry function inside the region defined by the base and length, i.e. \texttt{type~=~\&function} and \texttt{base~<=~type~<~base~+~length}. Only code which already has the rights to the memory containing the entry function can create this capability. 
 
 The capability is then sealed with the \insn{CSealCode} instruction, becoming the code capability of the object, and is used once more in \insn{CSealData} to seal an arbitrary argument capability. Both components inherit the \emph{object type} field from the unsealed capability.
 
@@ -307,7 +307,7 @@ The proof-of-concept implementation of Qishr is based on JamVM 1.5.4\footnote{ht
 
 \begin{figure}
 	\includegraphics[width=\textwidth]{dia_jni_caps.pdf}
-	\caption{Diagram of a Java VM running a native library in a CHERI sandbox. All references are passed across the domain boundary as capabilities.}
+	\caption{Diagram of a JVM running a native library in a CHERI sandbox. All references are passed across the domain boundary as capabilities.}
 	\label{fig:OverviewCheriJNI}
 \end{figure}
 
@@ -334,7 +334,7 @@ The price is that JamVM is merely a Java interpreter and thus is unlikely to see
 
 \section{Library Loading}
 
-The process of loading a native library is initiated by calling the \texttt{loadLibrary} method of the \class{System} class. The VM looks for a shared object file of the given name inside lookup folders and attempts to load it with the mechanism approprite for that platform, e.g.\ \lib{dl} on variants of UNIX. When running on CHERI, this mechanism is now replaced with \lib{cheri} -- a library the CHERI SDK provides for managing sandbox instances. 
+The process of loading a native library is initiated by calling the \texttt{loadLibrary} method of the \class{System} class. The JVM looks for a shared object file of the given name inside lookup folders and attempts to load it with the mechanism approprite for that platform, e.g.\ \lib{dl} on variants of UNIX. When running on CHERI, this mechanism is now replaced with \lib{cheri} -- a library the CHERI SDK provides for managing sandbox instances. 
 
 % \begin{table}
 % 	\centering
@@ -527,7 +527,7 @@ Similar \texttt{Get/Release} upcalls also exist for operations with Java strings
 
 One of the recurring problems with the Native Interface is that the semantics of upcalls are rather ill-defined, especially in terms of their interference. For instance, \texttt{JNIEnv} provides upcalls for checking whether an exception has been raised (such exception will be propagate to Java code after the native method returns), clearing the exception or raising a new one. These enable native code to integrate with the try/catch mechanism of the Java language, but it is unclear which operations should be allowed while there is an exception pending, e.g.\ whether other methods can be called, and similar questions emerge whilst dealing with arrays (\S\ref{ArraysCriticalSection}). 
 
-The lack of a detailed operational model for JNI~\cite{Tan:2010:JNIFormalModel} means that the semantics of these calls are likely to differ between JVMs and native code which runs fine on one could completely break another. Qishr currently does add some \emph{sanity checks} into the trampoline, but a more thorough investigation would be required to guarantee that a sequence of upcalls cannot leave the state of the VM inconsistent. Many previous academic papers address this problem with static analysis~\cite{Kondoh:2008:FBJ:1390630.1390645, Li:2009:FBE:1653662.1653716, Li:2011:JEC:2048066.2048095}.
+The lack of a detailed operational model for JNI~\cite{Tan:2010:JNIFormalModel} means that the semantics of these calls are likely to differ between JVMs and native code which runs fine on one could completely break another. Qishr currently does add some \emph{sanity checks} into the trampoline, but a more thorough investigation would be required to guarantee that a sequence of upcalls cannot leave the state of the JVM inconsistent. Many previous academic papers address this problem with static analysis~\cite{Kondoh:2008:FBJ:1390630.1390645, Li:2009:FBE:1653662.1653716, Li:2011:JEC:2048066.2048095}.
 
 \section{System Calls}
 
@@ -791,7 +791,7 @@ This makes Qishr highly suitable for executing complicated long-running code, ty
 
 \subsection{Fast Arithmetic}
 
-Performance optimization can be a strong argument for including native code in Java applications but not all operations will benefit from a native implementation. Benchmarks carried out by Kurzyniec et al.~\cite{Kurzyniec01efficientcooperation} show that the enterprise-level JVMs, such as Oracle HotSpot, execute Java bytecode so efficiently that just the JNI invocation overhead itself can far exceed the achieved performance improvement. They conclude that in general JNI can be used only for heavy computation requiring very little interaction with the VM, such as \lib{sodium} described above. 
+Performance optimization can be a strong argument for including native code in Java applications but not all operations will benefit from a native implementation. Benchmarks carried out by Kurzyniec et al.~\cite{Kurzyniec01efficientcooperation} show that the enterprise-level JVMs, such as Oracle HotSpot, execute Java bytecode so efficiently that just the JNI invocation overhead itself can far exceed the achieved performance improvement. They conclude that in general JNI can be used only for heavy computation requiring very little interaction with the JVM, such as \lib{sodium} described above. 
 
 The point when native code becomes faster is necessarily later for Qishr than it is for regular JNI. That, of course, depends on the nature of the operation, but one possible comparison was made by implementing the textbook $O(N^3)$ matrix-squaring algorithm in Java and C. The methods are given two \keyword{float} arrays, one for input and one for output. That way, they only need to access the individual elements of the array and do not, for example, have to allocate new memory. 
 
