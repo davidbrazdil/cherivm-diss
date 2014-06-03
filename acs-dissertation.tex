@@ -885,9 +885,11 @@ Two tests were carried out: hosting a small static webpage and downloading 1MB o
 
 The Java portion of the code runs equally fast on both JVMs and because access control is only applied when \texttt{listen} and \texttt{accept} are being invoked on a socket, it should have almost no impact on the overall performance once the connection is set up. The slowdown is located in the repeated calls to \texttt{write} which sends chunks of data -- passed inside byte buffers -- over the socket, pointing again to array copying as the main source of the overhead.
 
-Robusta (\S\ref{sec:Robusta}) reports 2-10\% overhead for similar operations, but the authors evaluated it against OpenJDK which does not support pinning. Tests where therefore re-run on JamVM with pinning disabled and a comparable overhead of 4-8\% measured. In both cases, this is the slowdown of downcalls, upcalls, access control and with Robusta also the dynamic checks of SFI. Because CHERI does not have a similar always-present overhead, Qishr should and often does perform slightly better. The slow JamVM interpreter involved in access control is likely to be the reason why this differnce is not more significant.
+Robusta (\S\ref{sec:Robusta}) reports 2-10\% overhead for similar operations, but the authors evaluated it against OpenJDK which does not support pinning. Tests were therefore re-run on JamVM with pinning disabled and a comparable overhead of was 4-8\% measured. In both cases, this is the slowdown of downcalls, upcalls, access control and with Robusta also the dynamic checks of SFI. Because CHERI does not have a similar always-present overhead, Qishr should and often does perform slightly better. The slow JamVM interpreter involved in access control is likely to be the reason why this differnce is not more significant.
 
 \chapter{Conclusion} 
+
+
 
 \appendix
 \singlespacing
