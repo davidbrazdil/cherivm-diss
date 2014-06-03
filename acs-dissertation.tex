@@ -303,7 +303,7 @@ SFI is a promising and quickly maturing sandboxing technique. Compared to CHERI 
 
 \chapter{Design and Implementation} 
 
-The proof-of-concept implementation of Qishr is based on JamVM 1.5.4\footnote{http://jamvm.sourceforge.net/}, a highly-portable and compact Java virtual machine, used in combination with the GNU Classpath 0.99 framework\footnote{https://www.gnu.org/software/classpath/}. All changes were contained inside the source code of the virtual machine which means that other frameworks, such as OpenJDK\footnote{http://openjdk.java.net/} or Apache Harmony\footnote{https://harmony.apache.org/}, could be used instead.
+The proof-of-concept implementation of Qishr is based on JamVM 1.5.4\footnote{http://jamvm.sourceforge.net/}, a portable and compact Java virtual machine, used in combination with the GNU Classpath 0.99 framework\footnote{https://www.gnu.org/software/classpath/}. All changes were contained inside the source code of the virtual machine which means that other frameworks, such as OpenJDK\footnote{http://openjdk.java.net/} or Apache Harmony\footnote{https://harmony.apache.org/}, could be used instead.
 
 \begin{figure}
 	\includegraphics[width=\textwidth]{dia_jni_caps.pdf}
@@ -311,7 +311,7 @@ The proof-of-concept implementation of Qishr is based on JamVM 1.5.4\footnote{ht
 	\label{fig:OverviewCheriJNI}
 \end{figure}
 
-An overview of the modified design is given in Figure~\ref{fig:OverviewCheriJNI}. As opposed to the the original schematic in Figure~\ref{fig:OverviewJNI}, the native library is now fully contained inside a CHERI sandbox that limits its memory access to a designated region of the virtual address space, thus preventing it from reading or modifying the state of other components. The code is not allowed to perform system calls and similarly cannot directly interact with the JVM. Its only option is to invoke a trampoline function inside the host domain which performs the operation on the native code's behalf provided that it is not in conflict with the active security policy.
+An overview of the modified design is given in Figure~\ref{fig:OverviewCheriJNI}. Unlike the the original schematic in Figure~\ref{fig:OverviewJNI}, the native library is now fully contained inside a CHERI sandbox that limits its memory access to a designated region of the virtual address space, preventing it from reading or modifying the state of other components. The code is not allowed to perform system calls and cannot directly interact with the JVM. Its only option is to invoke a trampoline function inside the host domain which performs the operation on the native code's behalf provided that it is not in conflict with the active security policy.
 
 To retain source-level backwards compatibility, the native code can be compiled against \lib{qishr} which provides wrappers for \lib{c} functions and the \texttt{JNIEnv} interface, allowing for seamless integration of legacy code into the sandboxed environment.
 
@@ -319,9 +319,9 @@ To retain source-level backwards compatibility, the native code can be compiled 
 
 Even though the MIPS64 architecture, which CHERI extends, has been around for a while, processors implementing its instruction set are yet to penetrate the consumer electronics market. Software support for this architecture therefore still remains quite rare and its lack proved to be one of the obstacles in the early stages of this project as virtual machines always rely on at least some small amount of assembly code, typically more if optimized for performance. Likewise, the choice of the JVM was limited by the fact that the only operating system ported to CHERI to date is FreeBSD, and the only C/C++ compiler capable of producing CHERI code is LLVM/Clang. 
 
-Efforts were initially invested into porting a minimal subset of the Android runtime, ideally the emerging LLVM-based ahead-of-time ART compiler\footnote{https://source.android.com/devices/tech/dalvik/art.html} which will replace the original Dalvik VM in the future releases of Android. Porting ART to CHERI is especially attractive because it translates bytecode directly to native code optimized for running on resource-restricted platforms much like the CHERI prototype. Being based on LLVM, ART could use the CHERI back-end to additionally embrace the security enhancements offered by capabilities while running managed code.
+Effort was initially invested into porting a minimal subset of the Android runtime, ideally the emerging LLVM-based ahead-of-time ART compiler\footnote{https://source.android.com/devices/tech/dalvik/art.html} which will replace the original Dalvik VM in the future releases of Android. Porting ART to CHERI is especially attractive because it translates bytecode directly to native code optimized for running on resource-restricted platforms much like the CHERI prototype. Being based on LLVM, ART could use the CHERI back-end to additionally embrace the security enhancements offered by capabilities while running managed code.
 
-The tight integration of ART (and its numerous dependencies) to a specific platform and toolchain does, however, make porting it to another substrate a very time-consuming task. The obstacles of replacing GCC with LLVM{\slash}Clang in the Android build system have mostly been solved by Linaro~\cite{Linaro:AndroidWithClang}, and ART's pre-existing MIPS32 support and LLVM nature therefore should have made emitting MIPS64/CHERI instructions a straightforward extension. Sadly, fixing its codebase, abundant in Linux-specific code and pointer arithmetic assuming 32-bit pointer length, is far beyond the time frame of this project. With the expected release of 64-bit Android, this path could be revisited.
+However, the tight integration of ART (and its numerous dependencies) to a specific platform and toolchain makes porting it to another substrate a very time-consuming task. The obstacles of replacing GCC with LLVM{\slash}Clang in the Android build system have mostly been solved by Linaro~\cite{Linaro:AndroidWithClang}, and ART's pre-existing MIPS32 support and LLVM nature therefore should have made emitting MIPS64/CHERI instructions a straightforward extension. Fixing its codebase, abundant in Linux-specific code and pointer arithmetic assuming 32-bit pointer length, is far beyond the time frame of this project. With the expected release of 64-bit Android, this path could be revisited.
 
 After a period of experimentation with other Java virtual machines suitable for the embedded environment, the combination of JamVM and GNU Classpath framework was selected for its:
 \begin{itemize}
@@ -334,7 +334,7 @@ The price is that JamVM is merely a Java interpreter and thus is unlikely to see
 
 \section{Library Loading}
 
-The process of loading a native library is initiated by calling the \texttt{loadLibrary} method of the \class{System} class. The JVM looks for a shared object file of the given name inside lookup folders and attempts to load it with the mechanism approprite for that platform, e.g.\ \lib{dl} on variants of UNIX. When running on CHERI, this mechanism is now replaced with \lib{cheri} -- a library the CHERI SDK provides for managing sandbox instances. 
+The process of loading a native library is initiated by calling the \texttt{loadLibrary} method of the \class{System} class. The JVM looks for a shared object file of the given name inside lookup folders and attempts to load it with the mechanism approprite for that platform, e.g.\ \texttt{dlopen()} on variants of UNIX. When running on CHERI, this mechanism is now replaced with \lib{cheri} -- a library the CHERI SDK provides for managing sandbox instances. 
 
 % \begin{table}
 % 	\centering
@@ -363,7 +363,7 @@ The process of loading a native library is initiated by calling the \texttt{load
 	\caption{Address space layout of a sandbox instance from the point of view of the sandboxed code.}
 \end{figure}
 
-\lib{cheri} starts with reserving a memory region for the newly created sandbox, preparing the guest's address space layout as summarized in Figure~\ref{fig:AddressSpaceLayout} and memory mapping the \emph{sandbox image} (library object file) into that region. \label{sec:AddressSpaceLayout}
+\lib{cheri} starts by reserving a memory region for the newly created sandbox, preparing the guest's address space layout as summarized in Figure~\ref{fig:AddressSpaceLayout} and memory mapping the \emph{sandbox image} (library object file) into that region. \label{sec:AddressSpaceLayout}
 
 If successful, it returns two object capabilities. One object represents the sandbox domain, with both the code and data component equal to the designated memory space and the entry point at \texttt{0x8000} as dictated by the CHERI ABI. \label{sec:SystemObject} The other is a system object which the sandbox can use to invoke a method inside the host domain. Its code component is the entire address space of the process, with an entry function inside \lib{cheri} which sets up the capability registers and hands over to a function selected by the host. To enable it to identify the domain it was invoked from, the data capability is set to the memory region of the sandbox. 
 
@@ -373,7 +373,7 @@ This mechanims is sound and works well for simple examples, but it is still quit
 
 \subsection{Resolution}
 
-JNI defines a naming convention which encodes the class name, the method name and its signature into a symbol name that the class loader searches for in the loaded shared libraries. Unfortunately, the fact that CHERI sandbox images currently cannot contain symbol information makes this process more complicated.
+JNI defines a naming convention which encodes the class name, method name and method signature into a symbol name that the class loader searches for in the loaded shared libraries. Unfortunately, the fact that CHERI sandbox images currently cannot contain symbol information makes this process more complicated.
 
 For the time being, Qishr uses a simple workaround. When the entry function is invoked with \emph{operation code} \texttt{1} (passed to it in \reg{a0}), the sandbox is expected to extract a function name string from a read-only capability in \reg{C1} and return a non-\texttt{NULL} handle if it implements it. The implementation in \lib{qishr} will look for the symbol in a list of function name and pointer pairs pregenerated by the \tool{Ctags} code analyzer\footnote{\url{http://ctags.sourceforge.net/}} and a provided script. The handle is the pointer to the function relative to the base of the inner address space.
 
@@ -393,7 +393,7 @@ The sandboxed code could embrace this mechanism to recover from traps and to thr
 
 \section{Interaction with the JVM}
 
-The \texttt{JNIEnv} data structure is the main communication gateway between native code and the managed environment. But because its designers assumed that native code can bypass it anyway, it completely lacks any form of protection against misbehaving code. With the native code sandboxed, a \texttt{JNIEnv}-like interface can be the only channel between the sandbox and the JVM core, and protecting the core's integrity in the presence of untrusted code becomes worthwhile.
+The \texttt{JNIEnv} data structure is the main communication gateway between native code and the managed environment. Because its designers assumed that native code can bypass it anyway, it lacks any form of protection against misbehaving code. With the native code sandboxed, a \texttt{JNIEnv}-like interface can be the only channel between the sandbox and the JVM core, and protecting the core's integrity in the presence of untrusted code becomes worthwhile.
 
 This interface is implemented using the system object capability (\S\ref{sec:SystemObject}) which invokes a \texttt{JNIEnv} trampoline in the system domain. Most of the operations, called \emph{upcalls}, retain the same semantics as their original counterparts, and will simply delegate the call to the corresponding \texttt{JNIEnv} function after the correctness of the arguments is verified. 
 
@@ -420,9 +420,9 @@ if (fid == NULL) { /* field not found */ }
 	\label{listing:SetFieldValue}
 \end{figure}
 
-The main purpose of \texttt{JNIEnv} is enabling the native code to interact with the class hierarchy and the class members in an efficient manner. To this end, native code can request three types of handlers: field identifiers, method identifiers and object references (include class references). Handlers are typically requested by name and JNI returns pointers to the corresponding internal data structures of the JVM which makes subsequent upcalls fast. An example of assigning a value to a \keyword{public} field is shown in Figure~\ref{listing:SetFieldValue}. Note that native code is allowed to cache the identifiers but class references are normal object references which can be garbage collected between invocations (\S\ref{sec:LocalAndGlobalRefs}). 
+The purpose of \texttt{JNIEnv} is enabling the native code to interact with the class hierarchy and the class members in an efficient manner. To this end, native code can request three types of handlers: field identifiers, method identifiers and object references (include class references). Handlers are typically requested by name and JNI returns pointers to the corresponding internal data structures of the JVM which makes subsequent upcalls fast. An example of assigning a value to a \keyword{public} field is shown in Figure~\ref{listing:SetFieldValue}. Note that native code is allowed to cache the identifiers but class references are normal object references which can be garbage collected between invocations (\S\ref{sec:LocalAndGlobalRefs}). 
 
-The two main problems with handles are, of course, that they can be dereferenced and forged. For instance, simple arithmetic on an existing object reference suffices to access its private fields as well as compute the handle of the following object on the heap. This can be prevented with sophisticated bookkeeping at the cost of performance, and indeed enterprise JVMs do that, but with CHERI there is another way. 
+The main problem with handles is that they can be dereferenced and forged. For example, simple arithmetic on an existing object reference suffices to access its private fields as well as compute the handle of the following object on the heap. This can be prevented with sophisticated bookkeeping at the cost of performance, and enterprise JVMs do that, but with CHERI there is another way. 
 
 \subsubsection{Safe Handles}
 
@@ -446,22 +446,22 @@ With all of these mechanisms in place, Qishr can guarantee the memory safety of 
 
 \subsection{Memory Management}
 
-Java is known as a language that automatically deallocates unreachable memory, a process famously called \emph{garbage collection} (GC). JNI integrates native code into this scheme by keeping a list of references passed to it and offering it a way of informing the JVM that some references are no longer needed. 
+Java automatically deallocates unreachable memory with \emph{garbage collection} (GC). JNI integrates native code into this scheme by keeping a list of references passed to it and offering it a way of informing the JVM that some references are no longer needed. 
 
 But in this scenario, JNI has no assurance that native code will not attempt to use the object reference again later. If the object is garbage collected and the memory allocated to another one, the native code would therefore hold a valid reference to it even despite the rules of visibility or the security policy, opening door to \emph{dangling reference} attacks.
 
 \subsubsection{Object References}
 \label{sec:LocalAndGlobalRefs}
 
-JNI distinguishes between three main types of references: local, global and weak global. Every object is by default passed to native code as a \emph{local reference} which remains valid only for the duration of the call. If the native library wishes to retain the reference between invocations, it can request it to be converted to a \emph{global reference} which will not be garbage collected until explicitly deleted. \emph{Weak global references} also remain valid across invocations, only their existence does not keep the object from being garbage collected at any point and native code must very carefully check their validity before every attempt to use them\footnote{Even if it does, it only shortens the window for an attack by invoking the GC.}. JamVM uses the bottom two bits of the pointer -- objects on heap are aligned to 8 bytes -- to distinguish between these.
+JNI distinguishes between three main types of references: local, global and weak global. Every object is by default passed to native code as a \emph{local reference} which remains valid only for the duration of the call. If the native library wishes to retain the reference between invocations, it can request it to be converted to a \emph{global reference} which will not be garbage collected until explicitly deleted. \emph{Weak global references} also remain valid across invocations, only their existence does not keep the object from being garbage collected at any point and native code must very carefully check their validity before every attempt to use them. JamVM uses the bottom two bits of the pointer -- objects on heap are aligned to 8 bytes -- to distinguish between these.
 
-Native code needs to remain aware of the number of references it has requested. For instance, if the method creates a large number of small intermediate objects, they will not be deleted from the list maintained by the JVM even if their references are not kept. For this reason, \texttt{JNIEnv} has several upcalls for signalling that a reference is no longer needed. 
+Native code needs to remain aware of the number of references it has requested. For example, if the method creates a large number of small intermediate objects, they will not be deleted from the list maintained by the JVM even if their references are not kept. For this reason, \texttt{JNIEnv} has several upcalls for signalling that a reference is no longer needed. 
 
-One by one, references can be deleted with \texttt{DeleteLocalRef}, \texttt{DeleteGlobalRef} and \texttt{DeleteGlobalWeakRef}. With local references, there is also an option of creating a new frame on the Java stack with \texttt{PushLocalFrame} and then deleting all the references in it with \texttt{PopLocalFrame}. Unfortunately, JNI specification is very vague about the semantics of these calls and it is unclear what should happen if native code attempts to delete a local reference present in one of the frames deeper in the stack.
+One by one, references can be deleted with \texttt{DeleteLocalRef}, \texttt{DeleteGlobalRef} and \texttt{DeleteGlobalWeakRef}. With local references, there is also an option of creating a new frame on the Java stack with \texttt{PushLocalFrame} and then deleting all the references in it with \texttt{PopLocalFrame}. Unfortunately, the JNI specification is very vague about the semantics of these calls and it is unclear what should happen if native code attempts to delete a local reference present in one of the frames deeper in the stack.
 
 \subsubsection{Revoking References}
 
-The implementation in JamVM is therefore very relaxed and code does not even have to be strictly malicious to break the Java stack. Because the correctness of these lists is crucial for safe garbage collection, safety of these upcalls is verified by the trampoline.
+In JamVM, the implementation of the functions above is very relaxed and application code does not even have to be strictly malicious to break the Java stack. Because the correctness of these lists is crucial for safe garbage collection, safety of these upcalls is verified by the trampoline.
 
 \begin{figure}
 	\centering
@@ -474,13 +474,13 @@ Additionally, Qishr adopts an indirection scheme which enables it to revoke old 
 
 \subsubsection{Native Garbage Collection}
 
-The design is missing one last key component and that is the ability to reuse entries in the reference table. Right now, an entry of a revoked reference cannot be reallocated because the sandbox could still be holding on to that capability. To this end, Qishr extends the GC to scan the memory region of each sandbox and delete all revoked capabilities. Afterwards, revoked slots can be safely freed and reused.
+The design is missing one last key component and that is the ability to reuse entries in the reference table. An entry of a revoked reference cannot be reallocated because the sandbox could still be holding on to that capability. To address this, Qishr extends the GC to scan the memory region of each sandbox and delete all revoked capabilities. Afterwards, revoked slots can be safely freed and reused.
 
 In general, Java applications cannot make any assumptions about when the garbage collector will be invoked or how it will affect performance. Typically, the JVM will run the GC if it fails to allocate memory for a new object on the Java heap. Some JVMs, including JamVM, will then lock the entire world until the garbage collection finishes, but Dalvik, for example, is capable of running the GC in a background thread. 
 
-What does not change are the three stages of garbage collection. First, it traverses the Java stack and recursively marks every object it encounters. This is followed by a linear scan of the object heap (\emph{heap sweep}) and deallocation of unmarked objects. If the second step has not freed a fragment large enough for the new object, the GC will attempt again, this time also freeing weak references, and eventually will resort to heap compaction (a very expensive operation). Qishr modifies each one of those stages.
+The garbage collector begins by traversing the Java stack and recursively marks every object it encounters. This is followed by a linear scan of the object heap (\emph{heap sweep}) and deallocation of unmarked objects. If the second step has not freed a fragment large enough for the new object, the GC will attempt again, this time also freeing weak references, and eventually will resort to heap compaction (a very expensive operation). Qishr modifies each one of those stages.
 
-JamVM marking is highly conservative as the GC cannot distinguish native handles from other data. When scanning the native stack of each thread, the marking step will search for values which could be pointers into the object heap. These are marked and recorded as potential \emph{roots}. With Qishr, the C stack of the JVM is separate from the C stack of the sandbox, so JamVM will only find its own pointers.
+JamVM marking is conservative as the GC cannot distinguish native handles from other data. When scanning the native stack of each thread, the marking step will search for values which could be pointers into the object heap. These are marked and recorded as potential \emph{roots}. With Qishr, the C stack of the JVM is separate from the C stack of the sandbox, so JamVM will only find its own pointers.
 
 The heap sweep does not need to be changed at all, but Qishr extends it to scrub the memory of sandboxes. This process should be recursive so that all memory reachable from the sandbox is scrubbed, but currently the only memory the sandbox can write into are its own image, stack and heap. The garbage collector does a linear scan of every fourth word, checking if its capability tag is set. Capabilities which 
 \begin{inparaenum}[\itshape a\upshape)]
@@ -490,13 +490,13 @@ The heap sweep does not need to be changed at all, but Qishr extends it to scrub
 \end{inparaenum}
 will be invalidated by having their first byte overwritten. After the scan, all revoked slots in the reference table are freed.
 
-And lastly, the heap compaction updates the pointers in the indirection table once finished moving the objects. The sealed capabilities do not need to be updated at all as they do not point directly into the object heap.
+The heap compaction finally updates the pointers in the indirection table after finished moving the objects. The sealed capabilities do not need to be updated at all as they do not point directly into the object heap.
 
 It should be noted that this makes the garbage collection of JamVM much more precise with respect to native code. In fact, the original marking algorithm can both miss a native handle -- when stored on the native heap -- and interpret random data as one. Respectively, the compaction then either does not update the handle or overwrites a value on the stack. The fact that Qishr indirects all the handles through the reference tables makes updating the pointers available to sandboxes trivial, but the GC can still misinterpret values on the JVM's stack. Further research could focus on converting its object pointers to typed capabilities so as to avoid this confusion.
 
 \subsection{Array Operations}
 
-Native code is often employed in otherwise pure-Java applications in order to improve performance while processing large amounts of data, which is why JNI offers several different ways of accessing the elements of Java arrays suitable for different situations.
+Native code is often employed in otherwise pure-Java applications to improve performance while processing large amounts of data, which is why JNI offers several different ways of accessing the elements of Java arrays suitable for different situations.
 
 The most straightforward are upcalls \texttt{Get\-<Type>\-Array\-Region} and \texttt{Set\-<Type>\-Array\-Region} which simply copy the selected range of elements to/from the provided native buffer. The Qishr version of these upcalls requires the pointer to the buffer to be passed as a capability, and the host must very carefully check that the buffer is long enough and that it lies entirely in either the heap or the stack, otherwise it might end up writing into the guard pages. 
 
@@ -525,7 +525,7 @@ Similar \texttt{Get/Release} upcalls also exist for operations with Java strings
 
 \subsection{State Consistency}
 
-One of the recurring problems with the Native Interface is that the semantics of upcalls are rather ill-defined, especially in terms of their interference. For instance, \texttt{JNIEnv} provides upcalls for checking whether an exception has been raised (such exception will be propagate to Java code after the native method returns), clearing the exception or raising a new one. These enable native code to integrate with the try/catch mechanism of the Java language, but it is unclear which operations should be allowed while there is an exception pending, e.g.\ whether other methods can be called, and similar questions emerge whilst dealing with arrays (\S\ref{ArraysCriticalSection}). 
+One of the recurring problems with the Native Interface is that the semantics of upcalls are rather ill-defined, especially in terms of their interference. For example, \texttt{JNIEnv} provides upcalls for checking whether an exception has been raised (such exception will be propagate to Java code after the native method returns), clearing the exception or raising a new one. These enable native code to integrate with the try/catch mechanism of the Java language, but it is unclear which operations should be allowed while there is an exception pending, e.g.\ whether other methods can be called, and similar questions emerge whilst dealing with arrays (\S\ref{ArraysCriticalSection}). 
 
 The lack of a detailed operational model for JNI~\cite{Tan:2010:JNIFormalModel} means that the semantics of these calls are likely to differ between JVMs and native code which runs fine on one could completely break another. Qishr currently does add some \emph{sanity checks} into the trampoline, but a more thorough investigation would be required to guarantee that a sequence of upcalls cannot leave the state of the JVM inconsistent. Many previous academic papers address this problem with static analysis~\cite{Kondoh:2008:FBJ:1390630.1390645, Li:2009:FBE:1653662.1653716, Li:2011:JEC:2048066.2048095}.
 
@@ -541,7 +541,7 @@ At any given time, the enforced security policy is determined by the active secu
 
 The policy is enforced on a per-thread basis by associating each Java thread with a set of permissions. Before a protected operation is performed, the framework will retrieve the current security manager (also thread-local) with \texttt{System.{\allowbreak}getSecurityManager()} and if it is not \texttt{NULL}, it will call the \texttt{checkPermission} method with the appropriate permission object. Java provides many built-in permissions, but applications can create new ones simply by extending the \class{Permission} class. The \class{Security\-Manager} class defines wrapping methods for the most common checks, such as \texttt{checkRead} for the permission to read a given file or \texttt{checkConnect} for connecting to a given host and port. If the access is not granted, the security manager throws a \texttt{SecurityException}.
 
-Qishr's trampoline integrates native code into this mechanism simply by calling the same methods with JNI upcalls wherever appropriate. As an example, consider the \texttt{open} function. \texttt{open} takes two arguments: a C string with the file path and an integer with bit flags. The bottom two bits determine whether the sandbox requested the file to be opened for reading, writing or both. Accordingly, the trampoline will convert the file path to a Java string, get the object reference of the active security manager and invoke \texttt{checkRead} and/or \texttt{checkWrite} on it. It then checks if an exception has been thrown and if it has, catches it and returns \texttt{-1} with the \texttt{EPERM} error code in accordance with the POSIX specification. \label{sec:SyscallException}
+Qishr's trampoline integrates native code into this mechanism simply by calling the same methods with JNI upcalls wherever appropriate. For example, consider the \texttt{open} function. \texttt{open} takes two arguments: a C string with the file path and an integer with bit flags. The bottom two bits determine whether the sandbox requested the file to be opened for reading, writing or both. Accordingly, the trampoline will convert the file path to a Java string, get the object reference of the active security manager and invoke \texttt{checkRead} and/or \texttt{checkWrite} on it. It then checks if an exception has been thrown and if it has, catches it and returns \texttt{-1} with the \texttt{EPERM} error code in accordance with the POSIX specification. \label{sec:SyscallException}
 
 \begin{table}
 	\centering
@@ -579,7 +579,7 @@ Table~\ref{table:SecurityChecks} shows a non-exhaustive list of other system cal
 
 The protected system calls are typically ones which ask the kernel to perform an operation on a file (in the UNIX sense of the word). After a file is opened, the process and the kernel refer to it with a \emph{file descriptor}, an integer selected by and registered with the kernel. Qishr, performing system calls on behalf of the sandboxes, needs to keep track of the file descriptors each sandbox is allowed to use at any given point.
 
-Since file descriptors are 16-bit integers, it suffices to create a table capable of storing $2^{16}$ bit flags for each sandbox and then simply set the corresponding bit whenever a file descriptor is created, e.g.\ with \texttt{open} or \texttt{socket}, and clear it as soon as it is closed. In this scheme, a file descriptor value is always available to at most one domain at a time\footnote{With the exception of the standard stream descriptors \texttt{stdin=0}, \texttt{stdout=1} and \texttt{stderr=2} which are always available to all domains.}, and hence a malicious native method will never be able to interfere with files opened by the JVM or another sandbox. However, it is important that this analysis is precise or at least conservative. For instance, files opened with the \texttt{O\_CLOEXEC} flag will be closed by the kernel after any system call from the \texttt{exec*} family, which Qishr would not register. Hence it must first clear the permission bit for all the sandboxes before it assigns a newly opened file descriptor to one.
+Since file descriptors are integers, it suffices to create a table of active descriptors for each sandbox, and then simply store the corresponding integer whenever a file descriptor is created, e.g.\ with \texttt{open} or \texttt{socket}, and delete it as soon as it is closed. In this scheme, a file descriptor value is always available to at most one domain at a time\footnote{With the exception of the standard stream descriptors \texttt{stdin=0}, \texttt{stdout=1} and \texttt{stderr=2} which are always available to all domains.}, and hence a malicious native method will never be able to interfere with files opened by the JVM or another sandbox. However, it is important that this analysis is precise or at least conservative. For example, files opened with the \texttt{O\_CLOEXEC} flag will be closed by the kernel after any system call from the \texttt{exec*} family, which Qishr would not register. Hence it must first delete the permission from all the sandboxes before it assigns a newly opened file descriptor to one.
 
 Experiments were also carried out with file descriptors replaced with sealed capabilities, though they currently do not offer any significant advantage. In fact, using them requires a revocation scheme and garbage collection in the same way as with object references, but they also open door to sharing file descriptors between domains. Since Java provides its own abstraction over file descriptors (the \class{FileDescriptor} class), future work could attempt to unify these two approaches.
 
@@ -711,7 +711,7 @@ A working prototype of Qishr was implemented as an extension to the JamVM Java i
 
 JamVM, as summarized in Table~\ref{table:JamTCB}, consists of approximately 19k lines of code\footnote{Other JVMs are much larger -- HotSpot comprises 250,000 lines of code -- but porting Qishr to them would not require its code to grow significantly.} and additional 8k from its \emph{zlib} dependency (\lib{c}, compiler, kernel, etc. are not counted). Qishr increases the size of the JVM by approximately 6\% (breakdown in Table~\ref{table:QishrTCB}), but the reader should note that a production-ready version will necessarily be larger as many \lib{c} functions and some upcalls are currently not implemented or supported. All of this code must be fully trusted.
 
-Be that as it may, the added code actually removes significant portion of the framework code from the JamVM TCB. GNU Classpath consists of 20k lines of C code out of the total 100k\footnote{Only the core of GNU Classpath was actually compiled for the tests. The entire framework includes other packages, such as the Java AWT (platform independent GUI library).} and the 1.7k lines that Qishr adds to JamVM radically reduce the level of trust that this native code requires. The sandbox completely eliminates the possibility of it violating the safety properties of the Java environment, putting it on a par with managed code, and it also cannot bypass the security manager.
+The added code removes significant portion of the framework code from the JamVM TCB. GNU Classpath consists of 20k lines of C code out of the total 100k\footnote{Only the core of GNU Classpath was actually compiled for the tests. The entire framework includes other packages, such as the Java AWT (platform independent GUI library).} and the 1.7k lines that Qishr adds to JamVM radically reduce the level of trust that this native code requires. The sandbox completely eliminates the possibility of it violating the safety properties of the Java environment, putting it on a par with managed code, and it also cannot bypass the security manager.
 
 This is very important because up until now, a vulnerability inside native code would enable an attacker to issue system calls beyond what is permitted by the active policy. The Java portion of the framework is trusted to always consult the security manager before the native method is invoked, but now the \texttt{checkPermission} method is actually called transparently as part of the system call itself. 
 
@@ -763,9 +763,9 @@ The testing program initializes the library, generates two key pairs, encrypts a
 		\hline
 		getPublicKeySize	& $(78.94 \pm 5.50)$ $\mu$s	& $(78.45 \pm 5.21)$ $\mu$s	& $(229.3 \pm 27.9)$ $\mu$s & $(190.5 \pm 2.9)$ \% \\
 		initIDs			& $(2.665 \pm 0.955)$ ms		& $(2.341 \pm 0.829)$ ms		& $(4.182 \pm 0.745)$ ms & $(56.89 \pm 6.49)$ \% \\
-		generateKeys		& $(2.040 \pm 0.146)$ s		& $(2.045 \pm 0.079)$ s		& $(2.044 \pm 0.080)$ s & insignificant \\
-		encryptData		& $(2.016 \pm 0.030)$ s		& $(2.020 \pm 0.027)$ s		& $(2.007 \pm 0.023)$ s & insignificant \\
-		decryptData		& $(1.999 \pm 0.026)$ s 		& $(2.017 \pm 0.029)$ s 		& $(2.005 \pm 0.009)$ s & insignificant \\
+		generateKeys		& $(2.040 \pm 0.146)$ s		& $(2.045 \pm 0.079)$ s		& $(2.044 \pm 0.080)$ s & not significant \\
+		encryptData		& $(2.016 \pm 0.030)$ s		& $(2.020 \pm 0.027)$ s		& $(2.007 \pm 0.023)$ s & not significant \\
+		decryptData		& $(1.999 \pm 0.026)$ s 		& $(2.017 \pm 0.029)$ s 		& $(2.005 \pm 0.009)$ s & not significant \\
 		\hline
 	\end{tabular}
 	\caption{Average running time of native methods in the \lib{sodium} JNI wrapper. The Difference column compares Qishr against JamVM with direct buffers at 95\% confidence interval.}
@@ -895,7 +895,7 @@ Native code attached to the JVM with Qishr executes inside a CHERI sandbox that 
 
 A working Qishr prototype was implemented as an extension to the JamVM virtual machine, and the security benefits were illustrated on the vast reduction of its trusted computing base. Performance evaluation showed that the overhead of the system remains manageable even with frequent domain switches and highlighted it for sandboxing compute-intensive libraries, a common use case for JNI. In all tests, its overhead was lower than or on a par with similar tools.
 
-One of the loopholes that Qishr does not address are JVM state consistency issues. Since it has been the topic of previous research, future work could focus on incorporating an existing formal JNI model. In terms of performance, array copying was identfied as the main source of the slowdown, limiting Qishr's usability in certain situations. Allowing direct object heap access, though possible, is not straightforward and may not preserve the currently guaranteed source-level compatibility with legacy code.
+Qishr does not address JVM state consistency issues. Since it has been the topic of previous research, future work could focus on incorporating an existing formal JNI model. In terms of performance, array copying was identfied as the main source of the slowdown, limiting Qishr's usability in certain situations. Allowing direct object heap access, though possible, is not straightforward and may not preserve the currently guaranteed source-level compatibility with legacy code.
 
 \appendix
 \singlespacing
