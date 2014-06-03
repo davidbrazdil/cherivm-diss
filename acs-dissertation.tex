@@ -618,7 +618,7 @@ At the moment, Qishr does not address the issues of possible state inconsistency
 Native code cannot perform potentially dangerous operations on its own. Its only option is calling the system-domain methods defined in the trampoline which consult the active security manager. Untrusted JNI code is therefore fully integrated into the Java Sandbox.
 \end{description}
 
-Furthermore, Qishr tracks object references passed to native code and garbage collects revoked references before the handle value is reallocated, completely eliminating the threat of dangling reference attacks.
+Furthermore, Qishr tracks object references passed to native code and garbage collects revoked references before the handle value is reallocated.
 
 \section{Trusted Computing Base}
 
@@ -717,7 +717,7 @@ This is very important because up until now, a vulnerability inside native code 
 
 What follows is that if Qishr is trusted to call the security manager, then the Java classes do not have to be any more because system calls can only be issued from native code. This is a very tempting idea as it further reduces the amount of trusted code in the framework to merely the class loader, the security manager and its dependencies. However, reaching that stage would required more work on preserving the original semantics of the code (\S\ref{sec:SyscallException}).
 
-Running the framework inside Qishr's sandbox is an attractive option but comes at the price of a small overhead, as explained in the remainder of this chapter. Administrators therefore might choose to fully trust the framework, which is under their complete control, and only sandbox native libraries from external sources. Reduction of the TCB size is, nevertheless, the key to building a secure system, and Qishr can be one of the tools for achieving it.
+Running the framework inside Qishr's sandbox is an attractive option but comes at the price of a small overhead, as explained in the remainder of this chapter. Administrators therefore might choose to fully trust the framework, which is under their complete control, and only sandbox native libraries from external sources. Reduction of the TCB size is, nevertheless, the key to building secure systems, and Qishr helps achieving it.
 
 \section{Case Studies}
 
@@ -883,13 +883,19 @@ Previous benchmarks each focused on a different aspect of the overhead incurred 
 
 Two tests were carried out: hosting a small static webpage and downloading 1MB of random data. The client, \emph{curl}\footnote{http://curl.haxx.se/}, was running on another machine connected via Ethernet and first attempts, causing lazy class loading, were thrown away. The results, summarized in Table~\ref{table:OverheadNanoHTTPd}, show a reasonable overhead of approximately 17\% in both cases.
 
-The Java portion of the code runs equally fast on both JVMs and because access control is only applied when \texttt{listen} and \texttt{accept} are being invoked on a socket, it should have almost no impact on the overall performance once the connection is set up. The slowdown is located in the repeated calls to \texttt{write} which sends chunks of data -- passed inside byte buffers -- over the socket, pointing again to array copying as the main source of the overhead.
+The Java portion of the code runs equally fast on both JVMs and because access control is only applied when \texttt{listen} and \texttt{accept} are being invoked on a socket, it should have little impact on the overall performance once the connection is set up. The slowdown is located in the repeated calls to \texttt{write} which sends chunks of data -- passed inside byte buffers -- over the socket, pointing again to array copying as the main source of the overhead.
 
 Robusta (\S\ref{sec:Robusta}) reports 2-10\% overhead for similar operations, but the authors evaluated it against OpenJDK which does not support pinning. Tests were therefore re-run on JamVM with pinning disabled and a comparable overhead of 4-8\% was measured. In both cases, this is the slowdown of downcalls, upcalls, access control and with Robusta also the dynamic checks of SFI. Because CHERI does not have a similar always-present overhead, Qishr should -- and sometimes does -- perform slightly better. The slow JamVM interpreter, involved in access control, is likely to be the reason why this difference is not more significant.
 
 \chapter{Conclusion} 
 
+Native code has always been the weak point of the Java sandbox, forcing the administrators to choose between security and performance or code reuse, because protection mechanisms of contemporary computer systems do not provide enough support to facilitate reliable and efficient small-scale software compartmentalization. The CHERI processor is a promising capability-based research platform that offers cheap fine-grained memory protection with hardware-level implementation of the object capability model, and this dissertation successfully demonstrated its application on the problem of JNI code isolation.
 
+Native code attached to the JVM with Qishr executes inside a CHERI sandbox that protects the rest of the process from its potentially unsafe or malicious memory operations. Pointers into the Java heap are replaced with sealed capabilities, becoming truly opaque references which cannot be used to access the internal object representation or violate visibility rules, as guaranteed for managed code. Interaction with the JVM and the system kernel is only allowed via a trampoline which interposes dynamic code-safety and access-control checks to enforce the same security policy as the Java environment. To my knowledge, Qishr is also the first tool to garbage collect object references passed to native code, completely eliminating the threat of dangling reference attacks.
+
+A working Qishr prototype was implemented as an extension to the JamVM virtual machine, and the security benefits were illustrated on the vast reduction of its trusted computing base. Performance evaluation showed that the overhead of the system remains manageable even with frequent domain switches and highlighted it for sandboxing compute-intensive libraries, a common use case for JNI. In all tests, its overhead was lower than or on a par with similar tools.
+
+One of the loopholes that Qishr does not address are JVM state consistency issues related to upcall invocation. Since it has been the topic of previous research, future work could focus on incorporating an existing formal JNI model. In terms of performance, array copying was identfied as the main source of the slowdown, limiting its usability in certain situations. Unfortunately, allowing direct object heap access, though possible, is not straightforward and may not preserve the currently guaranteed source-level compatibility with legacy code.
 
 \appendix
 \singlespacing
