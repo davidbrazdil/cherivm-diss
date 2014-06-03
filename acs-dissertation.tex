@@ -873,7 +873,7 @@ Previous benchmarks each focused on a different aspect of the overhead incurred 
 		\hline
 		static webpage (w/o pinning)	& $(9.7 \pm 0.9)$ s	& $(10.3 \pm 0.8)$ s	& $(8.6 \pm 2.5)$ \% \\
 		static webpage (w/ pinning)	& $(8.9 \pm 0.7)$ s	& $(10.3 \pm 0.8)$ s 	& $(16.7 \pm 2.5)$ \% \\
-		file server (w/o pinning)	& $(0.0 \pm 0.0)$ s	& $(118.8 \pm 1.6)$ s 	& $(0.0 \pm 0.0)$ \% \\
+		file server (w/o pinning)	& $(108.5 \pm 2.0)$ s	& $(118.8 \pm 1.6)$ s 	& $(9.9 \pm 1.0)$ \% \\
 		file server (w/ pinning)	& $(101.0 \pm 1.4)$ s	& $(118.8 \pm 1.6)$ s 	& $(17.6 \pm 0.4)$ \% \\
 		\hline
 	\end{tabular}
@@ -883,9 +883,9 @@ Previous benchmarks each focused on a different aspect of the overhead incurred 
 
 Two tests were carried out: hosting a small static webpage and downloading 1MB of random data. The client, \emph{curl}\footnote{http://curl.haxx.se/}, was running on another machine connected via Ethernet and first attempts, causing lazy class loading, were thrown away. The results, summarized in Table~\ref{table:OverheadNanoHTTPd}, show a reasonable overhead of approximately 17\% in both cases.
 
-Robusta (\S\ref{sec:Robusta}) reports 2-10\% overhead for a similar type of operations\footnote{GNU Classpath implements \class{ZipFile} class in Java, not as a \emph{zlib} wrapper. Same compression tests were not reproducible.}, but the authors evaluated it against OpenJDK which does not support pinning. Tests where therefore re-run on JamVM with pinning disabled and a comparable overhead of 6-10\% measured. 
-
 The Java portion of the code runs equally fast on both JVMs and because access control is only applied when \texttt{listen} and \texttt{accept} are being invoked on a socket, it should have almost no impact on the overall performance once the connection is set up. The slowdown is located in the repeated calls to \texttt{write} which sends chunks of data -- passed inside byte buffers -- over the socket, pointing again to array copying as the main source of the overhead.
+
+Robusta (\S\ref{sec:Robusta}) reports 2-10\% overhead for similar operations, but the authors evaluated it against OpenJDK which does not support pinning. Tests where therefore re-run on JamVM with pinning disabled and a comparable overhead of 6-11\% measured. In both cases, this is the slowdown of downcalls, upcalls, access control and in the case of Robusta also the dynamic checks of SFI. Because CHERI does not have a similar always-present overhead, Qishr should perform slightly better. One of the reasons why it does not might be the slow JamVM interpreter needed during access control, but more analysis would be required to identify the source.
 
 \chapter{Conclusion} 
 
